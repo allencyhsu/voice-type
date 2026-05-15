@@ -27,3 +27,21 @@ def test_runtime_marks_error_when_runner_raises():
 
     assert runtime.status == ListenerStatus.ERROR
     assert runtime.error == "boom"
+
+
+def test_runtime_stop_calls_stop_callback():
+    calls = []
+    runtime = VoiceTypeListenerRuntime(listener_runner=lambda: None, stop_listener=lambda: calls.append("stop"))
+
+    runtime.stop()
+
+    assert calls == ["stop"]
+    assert runtime.status == ListenerStatus.STOPPED
+
+
+def test_runtime_status_callback_updates_status():
+    runtime = VoiceTypeListenerRuntime(listener_runner=lambda: None)
+
+    runtime.set_status(ListenerStatus.LISTENING)
+
+    assert runtime.status == ListenerStatus.LISTENING

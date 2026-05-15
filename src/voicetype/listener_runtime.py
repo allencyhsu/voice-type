@@ -7,13 +7,21 @@ import threading
 class ListenerStatus(StrEnum):
     READY = "Ready"
     RUNNING = "Running"
+    LISTENING = "Listening"
+    PROCESSING = "Processing"
     STOPPED = "Stopped"
     ERROR = "Error"
 
 
 class VoiceTypeListenerRuntime:
-    def __init__(self, *, listener_runner: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        *,
+        listener_runner: Callable[[], None],
+        stop_listener: Callable[[], None] | None = None,
+    ) -> None:
         self.listener_runner = listener_runner
+        self.stop_listener = stop_listener
         self.status = ListenerStatus.READY
         self.error: str | None = None
         self._thread: threading.Thread | None = None
@@ -28,6 +36,14 @@ class VoiceTypeListenerRuntime:
         if self._thread is not None:
             self._thread.join(timeout=timeout)
 
+    def set_status(self, status: ListenerStatus | str) -> None:
+        self.status = ListenerStatus(status)
+
+    def stop(self) -> None:
+        if self.stop_listener is not None:
+            self.stop_listener()
+        self.status = ListenerStatus.STOPPED
+
     def _run(self) -> None:
         self.status = ListenerStatus.RUNNING
         try:
@@ -38,7 +54,11 @@ class VoiceTypeListenerRuntime:
             self.status = ListenerStatus.ERROR
 
 
-def build_default_listener_runner() -> Callable[[], None]:
+def build_default_listener_runner(
+    *,
+    status_callback: Callable[[ListenerStatus | str], None] | None = None,
+    stop_listener_holder: dict[str, Callable[[], None]] | None = None,
+) -> Callable[[], None]:
     from voicetype.cli import run_listen
     from voicetype.injector import TextInjector
     from voicetype.pipeline import DictationPipeline
@@ -61,5 +81,7 @@ def build_default_listener_runner() -> Callable[[], None]:
         hotword=[],
         min_seconds=None,
         notify="overlay",
+        status_callback=status_callback,
+        listener_holder=stop_listener_holder,
     )
     return lambda: run_listen(args, settings, pipeline)

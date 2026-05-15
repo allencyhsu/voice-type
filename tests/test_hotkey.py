@@ -10,3 +10,18 @@ def test_right_ctrl_listener_toggles_only_for_right_ctrl():
     listener.handle_key_release("a")
 
     assert calls == ["toggle"]
+
+
+def test_right_ctrl_listener_stop_stops_active_listener():
+    calls = []
+
+    class FakeListener:
+        def stop(self):
+            calls.append("stop")
+
+    listener = RightCtrlToggleListener(lambda: None)
+    listener._listener = FakeListener()
+
+    listener.stop()
+
+    assert calls == ["stop"]

@@ -67,7 +67,7 @@ For no-console startup, create a shortcut or startup entry that runs:
 .\.venv\Scripts\pythonw.exe -m voicetype tray
 ```
 
-The tray menu includes status, logs, startup-at-login, and quit actions.
+The tray menu includes live status, Show Latest Log, Open Logs, startup-at-login, and quit actions. Quit stops the background listener before closing the tray icon.
 
 Manual test flow:
 
@@ -194,6 +194,13 @@ Print recent records as JSONL for debugging:
 
 ```powershell
 python -m voicetype logs --today --limit 5 --json
+```
+
+Show only the newest record:
+
+```powershell
+python -m voicetype logs --last
+python -m voicetype logs --last --json
 ```
 
 Open the log directory:

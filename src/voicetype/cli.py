@@ -17,6 +17,7 @@ from voicetype.session_log import (
     SessionLogger,
     build_listen_session_record,
     default_log_dir,
+    latest_session_record,
     log_path_for,
     read_session_records,
 )
@@ -53,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     logs_parser = subparsers.add_parser("logs")
     logs_parser.add_argument("--today", action="store_true", default=True)
     logs_parser.add_argument("--limit", type=int, default=10)
+    logs_parser.add_argument("--last", action="store_true")
     logs_parser.add_argument("--json", action="store_true")
     logs_parser.add_argument("--open-dir", action="store_true")
 
@@ -138,6 +140,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
 
     print("VoiceType ready. Press right Ctrl to start listening; press right Ctrl again to stop.")
     print("Press Ctrl+C in this terminal to quit.")
+    update_listener_status(args, "Ready")
 
     def toggle() -> None:
         with lock:
@@ -145,9 +148,11 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
                 recorder.start()
                 recording_started_at["value"] = current_timestamp()
                 notifier.notify("Listening...")
+                update_listener_status(args, "Listening")
                 return
 
             notifier.notify("Processing...")
+            update_listener_status(args, "Processing")
             audio_path = recorder.stop_to_wav()
             completed_at = current_timestamp()
             segment_started_at = recording_started_at["value"]
@@ -173,6 +178,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
                     ),
                 )
                 notifier.notify(f"Ignored short recording ({recorded_seconds:.2f}s < {min_seconds:.2f}s).")
+                update_listener_status(args, "Ready")
                 return
 
             normalization = normalize_wav(audio_path)
@@ -207,12 +213,22 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
         if args.notify != "console":
             notifier.notify(describe_pipeline_status(result, paste_enabled=not args.no_paste))
         print(describe_pipeline_result(result, paste_enabled=not args.no_paste))
+        update_listener_status(args, "Ready")
 
     listener = RightCtrlToggleListener(toggle)
+    listener_holder = getattr(args, "listener_holder", None)
+    if listener_holder is not None:
+        listener_holder["stop"] = listener.stop
     try:
         listener.run()
     except KeyboardInterrupt:
         print("\n[VoiceType] Stopped.")
+    finally:
+        if recorder.is_recording:
+            recorder.cancel()
+        update_listener_status(args, "Stopped")
+        if listener_holder is not None:
+            listener_holder.pop("stop", None)
 
 
 def run_logs(args) -> None:
@@ -224,6 +240,17 @@ def run_logs(args) -> None:
     day = date.today()
     path = log_path_for(day, log_dir=log_dir)
     records = read_session_records(day=day, log_dir=log_dir)
+
+    if args.last:
+        record = latest_session_record(day=day, log_dir=log_dir)
+        if record is None:
+            print(f"[VoiceType] No session log found for today: {path}")
+            return
+        if args.json:
+            print(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
+            return
+        print(format_log_record(record))
+        return
 
     if args.json:
         for record in select_recent_records(records, limit=args.limit):
@@ -284,6 +311,16 @@ def append_session_record(session_logger: SessionLogger, record: dict) -> None:
         session_logger.append(record)
     except OSError as exc:
         print(f"[VoiceType] Could not write session log: {exc}")
+
+
+def update_listener_status(args, status: str) -> None:
+    status_callback = getattr(args, "status_callback", None)
+    if status_callback is None:
+        return
+    try:
+        status_callback(status)
+    except Exception as exc:
+        print(f"[VoiceType] Could not update listener status: {exc}")
 
 
 def select_recent_records(records: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:

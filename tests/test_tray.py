@@ -6,10 +6,15 @@ class FakeRuntime:
     def __init__(self):
         self.status = ListenerStatus.READY
         self.started = False
+        self.stopped = False
 
     def start_in_thread(self):
         self.started = True
         self.status = ListenerStatus.RUNNING
+
+    def stop(self):
+        self.stopped = True
+        self.status = ListenerStatus.STOPPED
 
 
 def test_tray_controller_starts_runtime():
@@ -27,3 +32,28 @@ def test_tray_status_label_uses_runtime_status():
     controller = TrayController(runtime=runtime)
 
     assert controller.status_label() == "Status: Running"
+
+
+def test_tray_controller_can_show_latest_log():
+    messages = []
+
+    controller = TrayController(
+        runtime=FakeRuntime(),
+        latest_log_provider=lambda: "latest log line",
+        message_presenter=lambda title, message: messages.append((title, message)),
+    )
+
+    controller.show_latest_log()
+
+    assert messages == [("VoiceType Latest Log", "latest log line")]
+
+
+def test_tray_controller_stop_stops_runtime_and_icon():
+    runtime = FakeRuntime()
+    calls = []
+    controller = TrayController(runtime=runtime)
+
+    controller.quit(icon=type("FakeIcon", (), {"stop": lambda self: calls.append("icon-stop")})())
+
+    assert runtime.stopped is True
+    assert calls == ["icon-stop"]

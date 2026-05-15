@@ -38,6 +38,17 @@ def read_session_records(
     return records
 
 
+def latest_session_record(
+    *,
+    day: date | None = None,
+    log_dir: str | Path | None = None,
+) -> dict[str, Any] | None:
+    records = read_session_records(day=day, log_dir=log_dir)
+    if not records:
+        return None
+    return records[-1]
+
+
 class SessionLogger:
     def __init__(
         self,

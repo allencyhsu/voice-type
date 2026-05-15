@@ -74,6 +74,20 @@ def test_toggle_recorder_starts_and_stops_to_wav(monkeypatch, tmp_path):
     assert calls[3][3] == 16000
 
 
+def test_toggle_recorder_cancel_closes_active_stream(monkeypatch):
+    calls = []
+    stream = _FakeStream(calls)
+
+    monkeypatch.setattr("voicetype.audio.sd.InputStream", lambda **kwargs: stream.capture_kwargs(kwargs))
+
+    recorder = ToggleRecorder(sample_rate=16000, channels=1)
+    recorder.start()
+    recorder.cancel()
+
+    assert recorder.is_recording is False
+    assert calls == ["start", "stop", "close"]
+
+
 def test_text_injector_copies_text_and_pastes(monkeypatch):
     calls = []
     monkeypatch.setattr("voicetype.injector.pyperclip.copy", lambda text: calls.append(("copy", text)))

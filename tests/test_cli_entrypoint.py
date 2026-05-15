@@ -60,6 +60,16 @@ def test_logs_parser_accepts_today_limit_json_and_open_dir():
     assert args.open_dir is True
 
 
+def test_logs_parser_accepts_last_flag():
+    parser = build_parser()
+
+    args = parser.parse_args(["logs", "--last", "--json"])
+
+    assert args.command == "logs"
+    assert args.last is True
+    assert args.json is True
+
+
 def test_cli_has_tray_command():
     parser = build_parser()
 

@@ -119,6 +119,13 @@ class ToggleRecorder:
         sf.write(path, self._recording_array(), self.sample_rate)
         return path
 
+    def cancel(self) -> None:
+        if self._stream is not None:
+            self._stream.stop()
+            self._stream.close()
+        self._stream = None
+        self.is_recording = False
+
     @property
     def recorded_frames(self) -> int:
         return int(sum(chunk.shape[0] for chunk in self._chunks))

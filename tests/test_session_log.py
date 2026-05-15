@@ -8,6 +8,7 @@ from voicetype.session_log import (
     SessionLogger,
     build_listen_session_record,
     default_log_dir,
+    latest_session_record,
     log_path_for,
     read_session_records,
 )
@@ -54,6 +55,23 @@ def test_read_session_records_returns_empty_list_when_log_missing(tmp_path):
     records = read_session_records(day=date(2026, 5, 15), log_dir=tmp_path)
 
     assert records == []
+
+
+def test_latest_session_record_returns_most_recent_record(tmp_path):
+    log_path = tmp_path / "2026-05-15.jsonl"
+    log_path.write_text(
+        '{"completed_at":"2026-05-15T09:00:00+08:00"}\n'
+        '{"completed_at":"2026-05-15T09:10:00+08:00"}\n',
+        encoding="utf-8",
+    )
+
+    record = latest_session_record(day=date(2026, 5, 15), log_dir=tmp_path)
+
+    assert record == {"completed_at": "2026-05-15T09:10:00+08:00"}
+
+
+def test_latest_session_record_returns_none_when_log_missing(tmp_path):
+    assert latest_session_record(day=date(2026, 5, 15), log_dir=tmp_path) is None
 
 
 def test_build_listen_session_record_keeps_audio_and_result_details():
