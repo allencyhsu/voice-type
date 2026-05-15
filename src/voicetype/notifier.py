@@ -1,6 +1,40 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from queue import Empty, Queue
 import threading
+
+
+@dataclass(frozen=True)
+class OverlayPresentation:
+    bg: str
+    fg: str
+    hide_after_ms: int | None
+
+
+def overlay_presentation_for(message: str) -> OverlayPresentation:
+    normalized = message.lower()
+    if "listening" in normalized:
+        return OverlayPresentation(bg="#dc2626", fg="#fff7ed", hide_after_ms=None)
+    if "processing" in normalized:
+        return OverlayPresentation(bg="#f59e0b", fg="#1f2937", hide_after_ms=1800)
+    if "inserted" in normalized:
+        return OverlayPresentation(bg="#16a34a", fg="#ecfdf5", hide_after_ms=1800)
+    if "ignored" in normalized or "no text" in normalized:
+        return OverlayPresentation(bg="#7c3aed", fg="#f5f3ff", hide_after_ms=2400)
+    return OverlayPresentation(bg="#2563eb", fg="#eff6ff", hide_after_ms=1800)
+
+
+def overlay_geometry(
+    *,
+    width: int,
+    height: int,
+    screen_width: int,
+    screen_height: int,
+    bottom_margin: int = 88,
+) -> tuple[int, int]:
+    x = max(0, int((screen_width - width) / 2))
+    y = max(0, screen_height - height - bottom_margin)
+    return x, y
 
 
 class ConsoleNotifier:
@@ -83,11 +117,11 @@ class TkOverlayBackend:
 
         label = tk.Label(
             root,
-            bg="#111827",
-            fg="#f9fafb",
-            padx=20,
-            pady=10,
-            font=("Segoe UI", 13, "bold"),
+            bg="#dc2626",
+            fg="#fff7ed",
+            padx=24,
+            pady=12,
+            font=("Segoe UI", 14, "bold"),
             bd=0,
         )
         label.pack()
@@ -95,18 +129,27 @@ class TkOverlayBackend:
         hide_after_id = {"value": None}
 
         def show(message: str) -> None:
-            label.configure(text=message)
+            presentation = overlay_presentation_for(message)
+            root.configure(bg=presentation.bg)
+            label.configure(text=message, bg=presentation.bg, fg=presentation.fg)
             root.update_idletasks()
             width = root.winfo_reqwidth()
             height = root.winfo_reqheight()
             screen_width = root.winfo_screenwidth()
-            x = int((screen_width - width) / 2)
-            y = 48
+            screen_height = root.winfo_screenheight()
+            x, y = overlay_geometry(
+                width=width,
+                height=height,
+                screen_width=screen_width,
+                screen_height=screen_height,
+            )
             root.geometry(f"{width}x{height}+{x}+{y}")
             root.deiconify()
             if hide_after_id["value"] is not None:
                 root.after_cancel(hide_after_id["value"])
-            hide_after_id["value"] = root.after(1800, root.withdraw)
+                hide_after_id["value"] = None
+            if presentation.hide_after_ms is not None:
+                hide_after_id["value"] = root.after(presentation.hide_after_ms, root.withdraw)
 
         def poll() -> None:
             try:

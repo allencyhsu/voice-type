@@ -67,11 +67,13 @@ Short accidental taps are ignored by default. A recording must be at least 0.7 s
 python -m voicetype listen --min-seconds 1.0
 ```
 
-Status notifications default to a small top-most overlay near the top center of the screen:
+Status notifications default to a vivid top-most overlay above the Windows taskbar:
 
 ```powershell
 python -m voicetype listen
 ```
+
+When you press right Ctrl to start recording, the overlay stays visible as a listening reminder until you press right Ctrl again. After you stop recording, it switches to the processing status and then hides automatically.
 
 Use terminal-only status messages with:
 

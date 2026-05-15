@@ -1,4 +1,12 @@
-from voicetype.notifier import ConsoleNotifier, NullNotifier, OverlayNotifier, ToastNotifier, create_notifier
+from voicetype.notifier import (
+    ConsoleNotifier,
+    NullNotifier,
+    OverlayNotifier,
+    ToastNotifier,
+    create_notifier,
+    overlay_geometry,
+    overlay_presentation_for,
+)
 
 
 def test_console_notifier_prints_prefixed_status(capsys):
@@ -54,3 +62,30 @@ def test_overlay_notifier_delegates_to_overlay_factory():
     notifier.notify("Processing...")
 
     assert calls == ["Processing..."]
+
+
+def test_overlay_listening_status_stays_visible_until_next_status():
+    presentation = overlay_presentation_for("Listening...")
+
+    assert presentation.hide_after_ms is None
+
+
+def test_overlay_processing_status_auto_hides():
+    presentation = overlay_presentation_for("Processing...")
+
+    assert presentation.hide_after_ms == 1800
+
+
+def test_overlay_uses_vivid_non_monochrome_colors_for_listening():
+    presentation = overlay_presentation_for("Listening...")
+
+    assert presentation.bg == "#dc2626"
+    assert presentation.fg == "#fff7ed"
+    assert presentation.bg not in {"#000000", "#111111", "#ffffff", "#f9fafb"}
+
+
+def test_overlay_geometry_places_window_above_taskbar():
+    x, y = overlay_geometry(width=320, height=56, screen_width=1920, screen_height=1080)
+
+    assert x == 800
+    assert y == 936
