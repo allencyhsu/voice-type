@@ -1,0 +1,26 @@
+[project]
+name = "voice-type"
+version = "0.1.0"
+description = "Windows voice typing prototype using remote Faster Whisper and Qwen endpoints."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic-settings>=2.2",
+    "requests>=2.32",
+    "sounddevice>=0.4.7",
+    "soundfile>=0.12.1",
+    "pyperclip>=1.8.2",
+    "pyautogui>=0.9.54",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "responses>=0.25",
+]
+
+[project.scripts]
+voicetype = "voicetype.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

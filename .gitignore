@@ -1,1 +1,12 @@
 .worktrees/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.wav
+*.mp3
+*.m4a
+dist/
+build/
+*.egg-info/
