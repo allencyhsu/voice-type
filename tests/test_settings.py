@@ -10,3 +10,13 @@ def test_default_settings_match_voice_type_services():
     assert settings.enable_llm is True
     assert settings.sample_rate == 16000
     assert settings.channels == 1
+
+
+def test_settings_read_environment_overrides(monkeypatch):
+    monkeypatch.setenv("VOICETYPE_ENABLE_LLM", "false")
+    monkeypatch.setenv("VOICETYPE_LLM_MODEL", "custom-model")
+
+    settings = Settings()
+
+    assert settings.enable_llm is False
+    assert settings.llm_model == "custom-model"
