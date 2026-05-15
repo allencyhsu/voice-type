@@ -54,6 +54,14 @@ class ToggleRecorder:
         sf.write(path, self._recording_array(), self.sample_rate)
         return path
 
+    @property
+    def recorded_frames(self) -> int:
+        return int(sum(chunk.shape[0] for chunk in self._chunks))
+
+    @property
+    def duration_seconds(self) -> float:
+        return self.recorded_frames / self.sample_rate
+
     def _on_audio(self, indata, frames, time_info, status) -> None:
         self._capture(indata)
 

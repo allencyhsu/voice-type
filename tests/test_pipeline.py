@@ -55,3 +55,33 @@ def test_pipeline_does_not_paste_on_failed_asr(tmp_path):
 
     assert result == ""
     assert injector.text is None
+
+
+def test_pipeline_result_reports_failed_asr_reason(tmp_path):
+    audio_path = tmp_path / "sample.wav"
+    audio_path.write_bytes(b"fake")
+    whisper = FakeWhisper(TranscriptionResult(success=False, segments=[], error="no speech"))
+    injector = FakeInjector()
+
+    pipeline = DictationPipeline(whisper, FakeQwen(), injector, enable_llm=True)
+    result = pipeline.process_file_result(audio_path)
+
+    assert result.status == "asr_failed"
+    assert result.raw_text == ""
+    assert result.final_text == ""
+    assert result.error == "no speech"
+    assert injector.text is None
+
+
+def test_pipeline_result_reports_empty_transcript_reason(tmp_path):
+    audio_path = tmp_path / "sample.wav"
+    audio_path.write_bytes(b"fake")
+    whisper = FakeWhisper(TranscriptionResult(success=True, segments=[]))
+    injector = FakeInjector()
+
+    pipeline = DictationPipeline(whisper, FakeQwen(), injector, enable_llm=True)
+    result = pipeline.process_file_result(audio_path)
+
+    assert result.status == "empty_transcript"
+    assert result.error is None
+    assert injector.text is None

@@ -75,6 +75,24 @@ Use this mode without paste when you only want to inspect the final text:
 python -m voicetype listen --no-paste
 ```
 
+Use this mode to isolate microphone and Whisper behavior without Qwen or paste:
+
+```powershell
+python -m voicetype listen --no-paste --no-llm
+```
+
+If VoiceType prints `No text recognized`, check the diagnostic line before it:
+
+```text
+[VoiceType] Captured 0.12s, 44 bytes: C:\Users\...\voicetype-abc.wav
+[VoiceType] No text recognized. status=empty_transcript
+```
+
+- Very short duration or a tiny WAV file means the recording toggle happened too quickly or no microphone samples arrived.
+- `status=empty_transcript` means Whisper accepted the request but returned no segments.
+- `status=asr_failed` means the Whisper API returned a failed transcription response.
+- `error=...` shows the Whisper server error when it provides one.
+
 ## Disable LLM Polish
 
 ```powershell

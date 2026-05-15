@@ -59,6 +59,8 @@ def test_toggle_recorder_starts_and_stops_to_wav(monkeypatch, tmp_path):
     path = recorder.stop_to_wav()
 
     assert path == tmp_path / "toggle.wav"
+    assert recorder.recorded_frames == 2
+    assert recorder.duration_seconds == 2 / 16000
     assert stream.kwargs["samplerate"] == 16000
     assert stream.kwargs["channels"] == 1
     assert stream.kwargs["dtype"] == "float32"

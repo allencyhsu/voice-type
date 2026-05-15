@@ -5,7 +5,7 @@ from pathlib import Path
 from voicetype.audio import ToggleRecorder, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
-from voicetype.pipeline import DictationPipeline
+from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
 from voicetype.settings import Settings
 from voicetype.whisper_client import WhisperClient
@@ -102,19 +102,38 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
 
             print("[VoiceType] Processing...")
             audio_path = recorder.stop_to_wav()
+            recorded_seconds = recorder.duration_seconds
+            audio_bytes = audio_path.stat().st_size
+            print(f"[VoiceType] Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
 
-        final_text = pipeline.process_file(
+        result = pipeline.process_file_result(
             audio_path,
             hotwords=args.hotword,
             paste=not args.no_paste,
         )
-        if final_text:
-            print("[VoiceType] Inserted text." if not args.no_paste else final_text)
-        else:
-            print("[VoiceType] No text recognized.")
+        print(describe_pipeline_result(result, paste_enabled=not args.no_paste))
 
     listener = RightCtrlToggleListener(toggle)
     try:
         listener.run()
     except KeyboardInterrupt:
         print("\n[VoiceType] Stopped.")
+
+
+def describe_pipeline_result(result: PipelineResult, *, paste_enabled: bool = True) -> str:
+    details = []
+    if result.language:
+        details.append(f"language={result.language}")
+    if result.duration is not None:
+        details.append(f"audio={result.duration:.2f}s")
+    if result.transcribe_time is not None:
+        details.append(f"asr={result.transcribe_time:.2f}s")
+    if result.error:
+        details.append(f"error={result.error}")
+
+    suffix = f" ({', '.join(details)})" if details else ""
+    if result.final_text:
+        if paste_enabled:
+            return f"[VoiceType] Inserted text. status={result.status}{suffix}"
+        return result.final_text
+    return f"[VoiceType] No text recognized. status={result.status}{suffix}"
