@@ -5,7 +5,7 @@ from pathlib import Path
 from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
-from voicetype.notifier import ConsoleNotifier
+from voicetype.notifier import create_notifier
 from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
 from voicetype.settings import Settings
@@ -36,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     listen_parser.add_argument("--no-llm", action="store_true")
     listen_parser.add_argument("--hotword", action="append", default=[])
     listen_parser.add_argument("--min-seconds", type=float, default=None)
+    listen_parser.add_argument("--notify", choices=["console", "toast", "off"], default="console")
 
     return parser
 
@@ -97,7 +98,7 @@ def main() -> None:
 
 def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     recorder = ToggleRecorder(sample_rate=settings.sample_rate, channels=settings.channels)
-    notifier = ConsoleNotifier()
+    notifier = create_notifier(args.notify)
     lock = threading.Lock()
     min_seconds = args.min_seconds or settings.min_record_seconds
 

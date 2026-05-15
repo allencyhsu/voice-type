@@ -25,6 +25,14 @@ def test_listen_parser_accepts_min_seconds_override():
     assert args.min_seconds == 1.25
 
 
+def test_listen_parser_accepts_notify_mode():
+    parser = build_parser()
+
+    args = parser.parse_args(["listen", "--notify", "toast"])
+
+    assert args.notify == "toast"
+
+
 def test_should_process_recording_enforces_min_duration():
     assert should_process_recording(0.69, min_seconds=0.7) is False
     assert should_process_recording(0.7, min_seconds=0.7) is True
