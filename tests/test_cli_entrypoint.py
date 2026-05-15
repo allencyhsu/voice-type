@@ -28,9 +28,17 @@ def test_listen_parser_accepts_min_seconds_override():
 def test_listen_parser_accepts_notify_mode():
     parser = build_parser()
 
-    args = parser.parse_args(["listen", "--notify", "toast"])
+    args = parser.parse_args(["listen", "--notify", "overlay"])
 
-    assert args.notify == "toast"
+    assert args.notify == "overlay"
+
+
+def test_listen_parser_defaults_to_overlay_notify_mode():
+    parser = build_parser()
+
+    args = parser.parse_args(["listen"])
+
+    assert args.notify == "overlay"
 
 
 def test_should_process_recording_enforces_min_duration():

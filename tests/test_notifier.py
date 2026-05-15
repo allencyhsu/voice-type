@@ -1,4 +1,4 @@
-from voicetype.notifier import ConsoleNotifier, NullNotifier, ToastNotifier, create_notifier
+from voicetype.notifier import ConsoleNotifier, NullNotifier, OverlayNotifier, ToastNotifier, create_notifier
 
 
 def test_console_notifier_prints_prefixed_status(capsys):
@@ -19,6 +19,7 @@ def test_create_notifier_returns_requested_mode():
     assert isinstance(create_notifier("console"), ConsoleNotifier)
     assert isinstance(create_notifier("off"), NullNotifier)
     assert isinstance(create_notifier("toast"), ToastNotifier)
+    assert isinstance(create_notifier("overlay"), OverlayNotifier)
 
 
 def test_toast_notifier_delegates_to_toast_factory():
@@ -39,3 +40,17 @@ def test_toast_notifier_delegates_to_toast_factory():
         ("init", "VoiceType", "VoiceType", "Listening...", "short"),
         ("show",),
     ]
+
+
+def test_overlay_notifier_delegates_to_overlay_factory():
+    calls = []
+
+    class FakeOverlay:
+        def notify(self, message):
+            calls.append(message)
+
+    notifier = OverlayNotifier(overlay_factory=FakeOverlay)
+
+    notifier.notify("Processing...")
+
+    assert calls == ["Processing..."]

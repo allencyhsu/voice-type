@@ -36,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     listen_parser.add_argument("--no-llm", action="store_true")
     listen_parser.add_argument("--hotword", action="append", default=[])
     listen_parser.add_argument("--min-seconds", type=float, default=None)
-    listen_parser.add_argument("--notify", choices=["console", "toast", "off"], default="console")
+    listen_parser.add_argument("--notify", choices=["overlay", "console", "toast", "off"], default="overlay")
 
     return parser
 

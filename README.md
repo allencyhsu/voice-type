@@ -67,7 +67,19 @@ Short accidental taps are ignored by default. A recording must be at least 0.7 s
 python -m voicetype listen --min-seconds 1.0
 ```
 
-Status notifications default to the terminal. Use Windows toast notifications when you want status without watching the terminal:
+Status notifications default to a small top-most overlay near the top center of the screen:
+
+```powershell
+python -m voicetype listen
+```
+
+Use terminal-only status messages with:
+
+```powershell
+python -m voicetype listen --notify console
+```
+
+Use Windows toast notifications with:
 
 ```powershell
 python -m voicetype listen --notify toast
