@@ -1,7 +1,10 @@
 import argparse
-from datetime import datetime
+from datetime import date, datetime
+import json
+import os
 import threading
 from pathlib import Path
+from typing import Any
 
 from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
@@ -9,7 +12,13 @@ from voicetype.injector import TextInjector
 from voicetype.notifier import create_notifier
 from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
-from voicetype.session_log import SessionLogger, build_listen_session_record
+from voicetype.session_log import (
+    SessionLogger,
+    build_listen_session_record,
+    default_log_dir,
+    log_path_for,
+    read_session_records,
+)
 from voicetype.settings import Settings
 from voicetype.whisper_client import WhisperClient
 
@@ -40,6 +49,12 @@ def build_parser() -> argparse.ArgumentParser:
     listen_parser.add_argument("--min-seconds", type=float, default=None)
     listen_parser.add_argument("--notify", choices=["overlay", "console", "toast", "off"], default="overlay")
 
+    logs_parser = subparsers.add_parser("logs")
+    logs_parser.add_argument("--today", action="store_true", default=True)
+    logs_parser.add_argument("--limit", type=int, default=10)
+    logs_parser.add_argument("--json", action="store_true")
+    logs_parser.add_argument("--open-dir", action="store_true")
+
     return parser
 
 
@@ -52,6 +67,11 @@ def main() -> None:
 
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "logs":
+        run_logs(args)
+        return
+
     settings = Settings()
     whisper = WhisperClient(settings.whisper_url, timeout_sec=settings.asr_timeout_sec)
 
@@ -181,6 +201,39 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
         print("\n[VoiceType] Stopped.")
 
 
+def run_logs(args) -> None:
+    log_dir = default_log_dir()
+    if args.open_dir:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        open_log_dir(log_dir)
+
+    day = date.today()
+    path = log_path_for(day, log_dir=log_dir)
+    records = read_session_records(day=day, log_dir=log_dir)
+
+    if args.json:
+        for record in select_recent_records(records, limit=args.limit):
+            print(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
+        if not records:
+            print(f"[VoiceType] No session log found for today: {path}")
+        return
+
+    if not records:
+        print(f"[VoiceType] No session log found for today: {path}")
+        return
+
+    print(f"[VoiceType] Session log: {path}")
+    for line in format_log_summary(records, limit=args.limit):
+        print(line)
+
+
+def open_log_dir(log_dir: Path) -> None:
+    try:
+        os.startfile(log_dir)
+    except AttributeError:
+        print(f"[VoiceType] Log directory: {log_dir}")
+
+
 def describe_pipeline_result(result: PipelineResult, *, paste_enabled: bool = True) -> str:
     details = []
     if result.language:
@@ -217,6 +270,45 @@ def append_session_record(session_logger: SessionLogger, record: dict) -> None:
         session_logger.append(record)
     except OSError as exc:
         print(f"[VoiceType] Could not write session log: {exc}")
+
+
+def select_recent_records(records: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return []
+    return list(reversed(records[-limit:]))
+
+
+def format_log_summary(records: list[dict[str, Any]], *, limit: int) -> list[str]:
+    recent = select_recent_records(records, limit=limit)
+    if not recent:
+        return ["[VoiceType] No session records found."]
+    return [format_log_record(record) for record in recent]
+
+
+def format_log_record(record: dict[str, Any]) -> str:
+    audio = record.get("audio") or {}
+    asr = record.get("asr") or {}
+    seconds = audio.get("seconds")
+    status = asr.get("status") or record.get("ignored_reason") or "unknown"
+    language = asr.get("language") or "-"
+    transcribe_time = asr.get("transcribe_time")
+    pasted = "yes" if record.get("pasted") else "no"
+    text = summarize_text(asr.get("final_text") or asr.get("raw_text") or record.get("ignored_reason") or "")
+    path = audio.get("path") or "-"
+
+    seconds_text = f"{seconds:.2f}s" if isinstance(seconds, int | float) else "-s"
+    asr_text = f"asr={transcribe_time:.2f}s" if isinstance(transcribe_time, int | float) else "asr=-"
+    return (
+        f"{record.get('completed_at', '-')} | {seconds_text} | {status} | {language} | "
+        f"{asr_text} | pasted={pasted} | {text} | {path}"
+    )
+
+
+def summarize_text(text: str, *, max_length: int = 80) -> str:
+    clean = " ".join(str(text).split())
+    if len(clean) <= max_length:
+        return clean or "-"
+    return f"{clean[: max_length - 3]}..."
 
 
 def should_process_recording(recorded_seconds: float, *, min_seconds: float) -> bool:

@@ -156,6 +156,30 @@ Each listener segment writes one JSONL record to:
 
 The log includes the segment start/end time, WAV path, duration, byte size, normalization details, Whisper status, recognized text, final text, and whether text was pasted. Short ignored recordings are logged too, with an `ignored_reason`.
 
+Show recent records from today's log:
+
+```powershell
+python -m voicetype logs --today
+```
+
+Limit the summary:
+
+```powershell
+python -m voicetype logs --today --limit 5
+```
+
+Print recent records as JSONL for debugging:
+
+```powershell
+python -m voicetype logs --today --limit 5 --json
+```
+
+Open the log directory:
+
+```powershell
+python -m voicetype logs --open-dir
+```
+
 ## Disable LLM Polish
 
 ```powershell

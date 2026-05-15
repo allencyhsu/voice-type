@@ -1,5 +1,5 @@
 from collections.abc import Callable, Mapping
-from datetime import datetime
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
@@ -15,6 +15,29 @@ def default_log_dir() -> Path:
     return base_dir / "VoiceType" / "logs"
 
 
+def log_path_for(day: date, *, log_dir: str | Path | None = None) -> Path:
+    base_dir = Path(log_dir) if log_dir is not None else default_log_dir()
+    return base_dir / f"{day:%Y-%m-%d}.jsonl"
+
+
+def read_session_records(
+    *,
+    day: date | None = None,
+    log_dir: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    log_day = day or datetime.now().date()
+    path = log_path_for(log_day, log_dir=log_dir)
+    if not path.exists():
+        return []
+
+    records: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        records.append(json.loads(line))
+    return records
+
+
 class SessionLogger:
     def __init__(
         self,
@@ -27,7 +50,7 @@ class SessionLogger:
 
     @property
     def path(self) -> Path:
-        return self.log_dir / f"{self._now():%Y-%m-%d}.jsonl"
+        return log_path_for(self._now().date(), log_dir=self.log_dir)
 
     def append(self, record: Mapping[str, Any]) -> Path:
         path = self.path

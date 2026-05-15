@@ -1,10 +1,16 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from voicetype.audio import AudioNormalization
 from voicetype.pipeline import PipelineResult
-from voicetype.session_log import SessionLogger, build_listen_session_record, default_log_dir
+from voicetype.session_log import (
+    SessionLogger,
+    build_listen_session_record,
+    default_log_dir,
+    log_path_for,
+    read_session_records,
+)
 
 
 def test_default_log_dir_uses_local_app_data(monkeypatch, tmp_path):
@@ -24,6 +30,30 @@ def test_session_logger_appends_jsonl_records(tmp_path):
         "event": "listen_segment",
         "final_text": "測試",
     }
+
+
+def test_log_path_for_uses_requested_day(tmp_path):
+    assert log_path_for(date(2026, 5, 15), log_dir=tmp_path) == tmp_path / "2026-05-15.jsonl"
+
+
+def test_read_session_records_returns_jsonl_records(tmp_path):
+    log_path = tmp_path / "2026-05-15.jsonl"
+    log_path.write_text(
+        '{"event":"listen_segment","asr":{"status":"inserted"}}\n'
+        '\n'
+        '{"event":"listen_segment","asr":{"status":"empty_transcript"}}\n',
+        encoding="utf-8",
+    )
+
+    records = read_session_records(day=date(2026, 5, 15), log_dir=tmp_path)
+
+    assert [record["asr"]["status"] for record in records] == ["inserted", "empty_transcript"]
+
+
+def test_read_session_records_returns_empty_list_when_log_missing(tmp_path):
+    records = read_session_records(day=date(2026, 5, 15), log_dir=tmp_path)
+
+    assert records == []
 
 
 def test_build_listen_session_record_keeps_audio_and_result_details():

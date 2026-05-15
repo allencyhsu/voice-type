@@ -3,6 +3,8 @@ from voicetype.cli import (
     build_parser,
     describe_pipeline_result,
     describe_pipeline_status,
+    format_log_summary,
+    select_recent_records,
     should_process_recording,
 )
 from voicetype.pipeline import PipelineResult
@@ -46,6 +48,18 @@ def test_listen_parser_defaults_to_overlay_notify_mode():
     assert args.notify == "overlay"
 
 
+def test_logs_parser_accepts_today_limit_json_and_open_dir():
+    parser = build_parser()
+
+    args = parser.parse_args(["logs", "--today", "--limit", "5", "--json", "--open-dir"])
+
+    assert args.command == "logs"
+    assert args.today is True
+    assert args.limit == 5
+    assert args.json is True
+    assert args.open_dir is True
+
+
 def test_should_process_recording_enforces_min_duration():
     assert should_process_recording(0.69, min_seconds=0.7) is False
     assert should_process_recording(0.7, min_seconds=0.7) is True
@@ -82,3 +96,40 @@ def test_describe_pipeline_status_is_overlay_friendly_for_empty_transcript():
     )
 
     assert message == "No text recognized."
+
+
+def test_select_recent_records_returns_latest_first_with_limit():
+    records = [
+        {"completed_at": "1"},
+        {"completed_at": "2"},
+        {"completed_at": "3"},
+    ]
+
+    assert select_recent_records(records, limit=2) == [{"completed_at": "3"}, {"completed_at": "2"}]
+
+
+def test_format_log_summary_includes_debug_fields():
+    lines = format_log_summary(
+        [
+            {
+                "completed_at": "2026-05-15T09:30:04+08:00",
+                "audio": {"seconds": 4.2, "path": "C:/Temp/voicetype-test.wav"},
+                "asr": {
+                    "status": "inserted",
+                    "language": "zh",
+                    "transcribe_time": 0.3,
+                    "final_text": "hello world",
+                },
+                "pasted": True,
+            }
+        ],
+        limit=10,
+    )
+
+    assert lines == [
+        "2026-05-15T09:30:04+08:00 | 4.20s | inserted | zh | asr=0.30s | pasted=yes | hello world | C:/Temp/voicetype-test.wav"
+    ]
+
+
+def test_format_log_summary_explains_missing_records():
+    assert format_log_summary([], limit=10) == ["[VoiceType] No session records found."]
