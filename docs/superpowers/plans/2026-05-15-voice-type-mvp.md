@@ -108,7 +108,7 @@ def test_default_settings_match_voice_type_services():
     settings = Settings()
 
     assert settings.whisper_url == "http://forge2.tail9d0481.ts.net:8008"
-    assert settings.llm_base_url == "http://forge2.tail9d0481.ts.net:8001/v1"
+    assert settings.llm_base_url == "http://ai-srv.tail9d0481.ts.net:8001/v1"
     assert settings.llm_model == "qwen3.6-35b"
     assert settings.enable_llm is True
     assert settings.sample_rate == 16000
@@ -155,7 +155,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="VOICETYPE_", env_file=".env")
 
     whisper_url: str = "http://forge2.tail9d0481.ts.net:8008"
-    llm_base_url: str = "http://forge2.tail9d0481.ts.net:8001/v1"
+    llm_base_url: str = "http://ai-srv.tail9d0481.ts.net:8001/v1"
     llm_model: str = "qwen3.6-35b"
     asr_timeout_sec: int = 120
     llm_timeout_sec: int = 20
@@ -911,7 +911,7 @@ Expected:
 
 ```text
 {'status': 'healthy', 'model': 'large-v2'}
-LLM unavailable: connection to http://forge2.tail9d0481.ts.net:8001/v1/models failed
+LLM unavailable: connection to http://ai-srv.tail9d0481.ts.net:8001/v1/chat/completions failed
 ```
 
 The exact exception text may vary. The acceptable result is that the command prints the Whisper health response and then either prints Qwen model information or a single `LLM unavailable:` line.
@@ -945,8 +945,8 @@ Windows voice typing prototype using a remote Faster Whisper transcription serve
 
 - Faster Whisper: `http://forge2.tail9d0481.ts.net:8008`
 - Faster Whisper model: `large-v2`
-- Qwen llama-server: `http://forge2.tail9d0481.ts.net:8001`
-- Qwen OpenAI-compatible base URL: `http://forge2.tail9d0481.ts.net:8001/v1`
+- Qwen llama-server: `http://ai-srv.tail9d0481.ts.net:8001`
+- Qwen OpenAI-compatible base URL: `http://ai-srv.tail9d0481.ts.net:8001/v1`
 
 ## Setup
 

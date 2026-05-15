@@ -12,7 +12,7 @@ The MVP intentionally avoids writing a Windows IME, kernel driver, or always-lis
 - Send captured audio to `http://forge2.tail9d0481.ts.net:8008/transcribe`.
 - Use the same Faster Whisper request shape as `u:\Projects\podcast-etl\fwhisper_meeting.py`.
 - Use model `large-v2` on the Faster Whisper server.
-- Optionally polish the raw transcript through Qwen 3.6 via llama-server at `http://forge2.tail9d0481.ts.net:8001`.
+- Optionally polish the raw transcript through Qwen 3.6 via llama-server at `http://ai-srv.tail9d0481.ts.net:8001`.
 - Insert the final text into the active Windows app.
 - Keep the ASR-only path usable when the Qwen endpoint is unavailable.
 - Keep all project configuration explicit and easy to override with environment variables.
@@ -54,7 +54,6 @@ Remote inference services
     POST /transcribe
 
   Qwen llama-server
-    GET  /v1/models
     POST /v1/chat/completions
 ```
 
@@ -151,7 +150,7 @@ If `success` is false, VoiceType must treat transcription as failed and must not
 Base URL:
 
 ```text
-http://forge2.tail9d0481.ts.net:8001
+http://ai-srv.tail9d0481.ts.net:8001
 ```
 
 Primary endpoint and LLM health preflight:
@@ -213,7 +212,7 @@ Environment variables:
 
 ```text
 VOICETYPE_WHISPER_URL=http://forge2.tail9d0481.ts.net:8008
-VOICETYPE_LLM_BASE_URL=http://forge2.tail9d0481.ts.net:8001/v1
+VOICETYPE_LLM_BASE_URL=http://ai-srv.tail9d0481.ts.net:8001/v1
 VOICETYPE_LLM_MODEL=qwen3.6-35b
 VOICETYPE_ASR_TIMEOUT_SEC=120
 VOICETYPE_LLM_TIMEOUT_SEC=20

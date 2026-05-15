@@ -6,8 +6,8 @@ Windows voice typing prototype using a remote Faster Whisper transcription serve
 
 - Faster Whisper: `http://forge2.tail9d0481.ts.net:8008`
 - Faster Whisper model: `large-v2`
-- Qwen llama-server: `http://forge2.tail9d0481.ts.net:8001`
-- Qwen OpenAI-compatible base URL: `http://forge2.tail9d0481.ts.net:8001/v1`
+- Qwen llama-server: `http://ai-srv.tail9d0481.ts.net:8001`
+- Qwen OpenAI-compatible base URL: `http://ai-srv.tail9d0481.ts.net:8001/v1`
 
 ## Setup
 
