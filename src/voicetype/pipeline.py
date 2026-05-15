@@ -9,7 +9,13 @@ class WhisperLike(Protocol):
 
 
 class QwenLike(Protocol):
-    def polish(self, raw_text: str, *, app_name: str | None = None) -> str:
+    def polish(
+        self,
+        raw_text: str,
+        *,
+        app_name: str | None = None,
+        hotwords: list[str] | None = None,
+    ) -> str:
         raise NotImplementedError
 
 
@@ -88,7 +94,7 @@ class DictationPipeline:
 
         final_text = raw_text
         if self.enable_llm and self.qwen is not None:
-            final_text = self.qwen.polish(raw_text, app_name=app_name)
+            final_text = self.qwen.polish(raw_text, app_name=app_name, hotwords=hotwords or [])
 
         if paste and final_text.strip():
             self.injector.paste(final_text)

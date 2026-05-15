@@ -14,7 +14,17 @@ class FakeWhisper:
 
 
 class FakeQwen:
-    def polish(self, raw_text: str, *, app_name: str | None = None) -> str:
+    def __init__(self):
+        self.hotwords = None
+
+    def polish(
+        self,
+        raw_text: str,
+        *,
+        app_name: str | None = None,
+        hotwords: list[str] | None = None,
+    ) -> str:
+        self.hotwords = hotwords
         return f"polished: {raw_text}"
 
 
@@ -42,6 +52,23 @@ def test_pipeline_pastes_polished_text_when_llm_enabled(tmp_path):
 
     assert result == "polished: hello"
     assert injector.text == "polished: hello"
+
+
+def test_pipeline_passes_hotwords_to_qwen(tmp_path):
+    audio_path = tmp_path / "sample.wav"
+    audio_path.write_bytes(b"fake")
+    qwen = FakeQwen()
+    whisper = FakeWhisper(
+        TranscriptionResult(
+            success=True,
+            segments=[TranscriptionSegment(0.0, 1.0, "typeless")],
+        )
+    )
+
+    pipeline = DictationPipeline(whisper, qwen, FakeInjector(), enable_llm=True)
+    pipeline.process_file(audio_path, hotwords=["Typeless"])
+
+    assert qwen.hotwords == ["Typeless"]
 
 
 def test_pipeline_does_not_paste_on_failed_asr(tmp_path):

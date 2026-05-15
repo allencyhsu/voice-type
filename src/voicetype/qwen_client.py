@@ -45,7 +45,13 @@ class QwenClient:
             "model": self.model,
         }
 
-    def polish(self, raw_text: str, *, app_name: str | None = None) -> str:
+    def polish(
+        self,
+        raw_text: str,
+        *,
+        app_name: str | None = None,
+        hotwords: list[str] | None = None,
+    ) -> str:
         if not raw_text.strip():
             return raw_text
 
@@ -53,6 +59,7 @@ class QwenClient:
             "app": app_name or "unknown",
             "mode": "dictation",
             "raw_transcript": raw_text,
+            "hotwords": hotwords or [],
         }
         request_body = {
             "model": self.model,

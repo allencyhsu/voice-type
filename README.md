@@ -118,6 +118,12 @@ Use this mode to isolate microphone and Whisper behavior without Qwen or paste:
 python -m voicetype listen --no-paste --no-llm
 ```
 
+Use hotwords for product names, tools, people, or domain terms that Whisper and Qwen should preserve:
+
+```powershell
+python -m voicetype listen --hotword Typeless --hotword "Faster Whisper"
+```
+
 If VoiceType prints `No text recognized`, check the diagnostic line before it:
 
 ```text
