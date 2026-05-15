@@ -43,8 +43,46 @@ python -m voicetype transcribe path\to\sample.wav
 python -m voicetype record --seconds 8 --paste
 ```
 
+## Toggle Listening with Right Ctrl
+
+Start the listener:
+
+```powershell
+python -m voicetype listen
+```
+
+Manual test flow:
+
+1. Open Notepad or another text input.
+2. Put the caret in the input field.
+3. Leave the VoiceType terminal running in the background or on another monitor.
+4. Press the right Ctrl key once to start listening.
+5. Speak.
+6. Press the right Ctrl key again to stop listening.
+7. VoiceType transcribes, optionally polishes with Qwen, and pastes through the clipboard into the focused input.
+
+The terminal prints status messages:
+
+```text
+[VoiceType] Listening...
+[VoiceType] Processing...
+[VoiceType] Inserted text.
+```
+
+Use this mode without paste when you only want to inspect the final text:
+
+```powershell
+python -m voicetype listen --no-paste
+```
+
 ## Disable LLM Polish
 
 ```powershell
 python -m voicetype record --seconds 8 --paste --no-llm
+```
+
+The same flag works in listener mode:
+
+```powershell
+python -m voicetype listen --no-llm
 ```

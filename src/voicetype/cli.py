@@ -1,7 +1,9 @@
 import argparse
+import threading
 from pathlib import Path
 
-from voicetype.audio import record_wav
+from voicetype.audio import ToggleRecorder, record_wav
+from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
 from voicetype.pipeline import DictationPipeline
 from voicetype.qwen_client import QwenClient
@@ -9,7 +11,7 @@ from voicetype.settings import Settings
 from voicetype.whisper_client import WhisperClient
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="VoiceType dictation client")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -28,6 +30,16 @@ def main() -> None:
     record_parser.add_argument("--no-llm", action="store_true")
     record_parser.add_argument("--hotword", action="append", default=[])
 
+    listen_parser = subparsers.add_parser("listen")
+    listen_parser.add_argument("--no-paste", action="store_true")
+    listen_parser.add_argument("--no-llm", action="store_true")
+    listen_parser.add_argument("--hotword", action="append", default=[])
+
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
     settings = Settings()
     whisper = WhisperClient(settings.whisper_url, timeout_sec=settings.asr_timeout_sec)
@@ -46,6 +58,18 @@ def main() -> None:
     if enable_llm:
         qwen = QwenClient(settings.llm_base_url, settings.llm_model, settings.llm_timeout_sec)
 
+    injector = TextInjector()
+    pipeline = DictationPipeline(
+        whisper,
+        qwen,
+        injector,
+        enable_llm=enable_llm,
+    )
+
+    if args.command == "listen":
+        run_listen(args, settings, pipeline)
+        return
+
     audio_file = getattr(args, "audio_file", None)
     if args.command == "record":
         audio_file = record_wav(
@@ -54,15 +78,43 @@ def main() -> None:
             channels=settings.channels,
         )
 
-    pipeline = DictationPipeline(
-        whisper,
-        qwen,
-        TextInjector(),
-        enable_llm=enable_llm,
-    )
     final_text = pipeline.process_file(
         audio_file,
         hotwords=args.hotword,
         paste=args.paste,
     )
     print(final_text)
+
+
+def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
+    recorder = ToggleRecorder(sample_rate=settings.sample_rate, channels=settings.channels)
+    lock = threading.Lock()
+
+    print("VoiceType ready. Press right Ctrl to start listening; press right Ctrl again to stop.")
+    print("Press Ctrl+C in this terminal to quit.")
+
+    def toggle() -> None:
+        with lock:
+            if not recorder.is_recording:
+                recorder.start()
+                print("[VoiceType] Listening...")
+                return
+
+            print("[VoiceType] Processing...")
+            audio_path = recorder.stop_to_wav()
+
+        final_text = pipeline.process_file(
+            audio_path,
+            hotwords=args.hotword,
+            paste=not args.no_paste,
+        )
+        if final_text:
+            print("[VoiceType] Inserted text." if not args.no_paste else final_text)
+        else:
+            print("[VoiceType] No text recognized.")
+
+    listener = RightCtrlToggleListener(toggle)
+    try:
+        listener.run()
+    except KeyboardInterrupt:
+        print("\n[VoiceType] Stopped.")

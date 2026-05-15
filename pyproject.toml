@@ -10,6 +10,8 @@ dependencies = [
     "soundfile>=0.12.1",
     "pyperclip>=1.8.2",
     "pyautogui>=0.9.54",
+    "pynput>=1.8.1",
+    "numpy>=2.0",
 ]
 
 [project.optional-dependencies]
