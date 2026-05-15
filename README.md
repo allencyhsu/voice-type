@@ -124,6 +124,8 @@ Use hotwords for product names, tools, people, or domain terms that Whisper and 
 python -m voicetype listen --hotword Typeless --hotword "Faster Whisper"
 ```
 
+Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
+
 If VoiceType prints `No text recognized`, check the diagnostic line before it:
 
 ```text

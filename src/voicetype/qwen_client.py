@@ -11,9 +11,15 @@ Rules:
 - Do not add facts.
 - Remove filler words, repeated starts, and explicit self-corrections.
 - Preserve mixed Chinese and English.
+- Preserve the Chinese script used in the transcript. If the transcript uses Traditional Chinese, keep Traditional Chinese and do not convert it to Simplified Chinese.
+- If the transcript uses Simplified Chinese, keep Simplified Chinese and do not convert it to Traditional Chinese.
 - Preserve technical terms and configured hotwords.
 - Match the target application tone when app context is available.
 - Return only JSON with action and text."""
+
+
+TRADITIONAL_CHINESE_MARKERS = set("規劃麼螢幕截圖語氣處理聲音錄製啟動關閉測試")
+SIMPLIFIED_CHINESE_MARKERS = set("规划么萤幕截图语气处理声音录制启动关闭测试")
 
 
 class QwenClient:
@@ -60,6 +66,7 @@ class QwenClient:
             "mode": "dictation",
             "raw_transcript": raw_text,
             "hotwords": hotwords or [],
+            "chinese_script": detect_chinese_script(raw_text),
         }
         request_body = {
             "model": self.model,
@@ -97,3 +104,11 @@ def _parse_json_object(content: str) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise ValueError("Model response JSON was not an object")
     return parsed
+
+
+def detect_chinese_script(text: str) -> str:
+    if any(character in TRADITIONAL_CHINESE_MARKERS for character in text):
+        return "traditional"
+    if any(character in SIMPLIFIED_CHINESE_MARKERS for character in text):
+        return "simplified"
+    return "unknown"
