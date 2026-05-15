@@ -4,7 +4,7 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest pushed commit: `d07ee14 feat: pass hotwords to Qwen polish`
+- Latest pushed commit: `9d8132d feat: add session log CLI`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
@@ -42,6 +42,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Temporary WAV files are retained for the current local calendar day only. On startup, `voicetype-*.wav` older than local midnight are removed.
 - Listener session logs are written as JSONL to `%LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl`.
 - Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, and ignored-recording reason.
+- `logs` CLI command can show today's recent session records, emit recent records as JSONL, and open the log directory.
 - `--hotword` values are passed to both Whisper and Qwen polish payloads.
 - Qwen polish fails open to raw Whisper text on server error, timeout, invalid JSON, or unusable response.
 
@@ -79,11 +80,21 @@ Check services:
 python -m voicetype doctor
 ```
 
+Show recent session logs:
+
+```powershell
+python -m voicetype logs --today
+python -m voicetype logs --today --limit 5
+python -m voicetype logs --today --limit 5 --json
+python -m voicetype logs --open-dir
+```
+
 Verification:
 
 ```powershell
 python -m pytest -q
 python -m compileall -q src tests
+python -m voicetype logs --help
 python -m voicetype listen --help
 ```
 
@@ -91,9 +102,12 @@ Last known verification:
 
 ```text
 python -m pytest -q
-41 passed
+48 passed
 
 python -m compileall -q src tests
+OK
+
+python -m voicetype logs --help
 OK
 
 python -m voicetype listen --help
@@ -102,6 +116,8 @@ OK
 
 ## Recent Commits
 
+- `9d8132d feat: add session log CLI`
+- `b6d8e2a docs: add VoiceType handoff`
 - `d07ee14 feat: pass hotwords to Qwen polish`
 - `902ad6c feat: add listener session logs`
 - `bd5a548 feat: keep overlay visible while listening`
@@ -138,11 +154,11 @@ OK
 
 ## Suggested Next Steps
 
-1. Add a lightweight manual diagnostics command for recent session logs, for example `python -m voicetype logs --today`.
-2. Add an optional setting for log retention or cleanup if JSONL grows too large.
-3. Improve app context detection so Qwen can tailor polish style based on the active app.
-4. Consider a tray app wrapper after the CLI listener is stable.
-5. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
+1. Add an optional setting for log retention or cleanup if JSONL grows too large.
+2. Improve app context detection so Qwen can tailor polish style based on the active app.
+3. Consider a tray app wrapper after the CLI listener is stable.
+4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
+5. Consider a compact `logs --last` command if today's log grows noisy during testing.
 
 ## Cautions
 
