@@ -43,7 +43,7 @@ python -m voicetype transcribe path\to\sample.wav
 python -m voicetype record --seconds 8 --paste
 ```
 
-## Toggle Listening with Right Ctrl
+## Toggle Listening with Right Alt
 
 Start the listener:
 
@@ -59,7 +59,7 @@ Start VoiceType in the Windows system tray:
 python -m voicetype tray
 ```
 
-Tray mode keeps the existing right Ctrl listener and overlay behavior. The microphone is still opened only while actively recording.
+Tray mode keeps the existing right Alt listener and overlay behavior. The microphone is still opened only while actively recording.
 
 For no-console startup, create a shortcut or startup entry that runs:
 
@@ -74,9 +74,9 @@ Manual test flow:
 1. Open Notepad or another text input.
 2. Put the caret in the input field.
 3. Leave the VoiceType terminal running in the background or on another monitor.
-4. Press the right Ctrl key once to start listening.
+4. Press the right Alt key once to start listening.
 5. Speak.
-6. Press the right Ctrl key again to stop listening.
+6. Press the right Alt key again to stop listening.
 7. VoiceType transcribes, optionally polishes with Qwen, and pastes through the clipboard into the focused input.
 
 Short accidental taps are ignored by default. A recording must be at least 0.7 seconds before VoiceType sends it to Whisper. Override this threshold with:
@@ -91,7 +91,7 @@ Status notifications default to a vivid top-most overlay above the Windows taskb
 python -m voicetype listen
 ```
 
-When you press right Ctrl to start recording, the overlay stays visible as a listening reminder until you press right Ctrl again. After you stop recording, it switches to the processing status and then hides automatically.
+When you press right Alt to start recording, the overlay stays visible as a listening reminder until you press right Alt again. After you stop recording, it switches to the processing status and then hides automatically.
 
 Use terminal-only status messages with:
 

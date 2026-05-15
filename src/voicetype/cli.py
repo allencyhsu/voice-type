@@ -8,7 +8,7 @@ from typing import Any
 
 from voicetype.active_window import get_active_app_name
 from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
-from voicetype.hotkey import RightCtrlToggleListener
+from voicetype.hotkey import RightAltToggleListener
 from voicetype.injector import TextInjector
 from voicetype.notifier import create_notifier
 from voicetype.pipeline import DictationPipeline, PipelineResult
@@ -138,7 +138,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     min_seconds = args.min_seconds or settings.min_record_seconds
     recording_started_at = {"value": None}
 
-    print("VoiceType ready. Press right Ctrl to start listening; press right Ctrl again to stop.")
+    print("VoiceType ready. Press right Alt to start listening; press right Alt again to stop.")
     print("Press Ctrl+C in this terminal to quit.")
     update_listener_status(args, "Ready")
 
@@ -215,7 +215,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
         print(describe_pipeline_result(result, paste_enabled=not args.no_paste))
         update_listener_status(args, "Ready")
 
-    listener = RightCtrlToggleListener(toggle)
+    listener = RightAltToggleListener(toggle)
     listener_holder = getattr(args, "listener_holder", None)
     if listener_holder is not None:
         listener_holder["stop"] = listener.stop

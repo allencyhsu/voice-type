@@ -3,16 +3,16 @@ from collections.abc import Callable
 from pynput import keyboard
 
 
-RIGHT_CTRL_NAME = "ctrl_r"
+RIGHT_ALT_NAME = "alt_r"
 
 
-class RightCtrlToggleListener:
+class RightAltToggleListener:
     def __init__(self, on_toggle: Callable[[], None]) -> None:
         self.on_toggle = on_toggle
         self._listener = None
 
     def handle_key_release(self, key) -> None:
-        if key == RIGHT_CTRL_NAME or key == keyboard.Key.ctrl_r:
+        if key == RIGHT_ALT_NAME or key == keyboard.Key.alt_r:
             self.on_toggle()
 
     def stop(self) -> None:
