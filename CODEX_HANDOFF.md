@@ -4,7 +4,7 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest pushed commit: `0b1efe1 fix: preserve Chinese script in Qwen polish`
+- Latest pushed commit: `76d91ff feat: pass active app context to Qwen`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
@@ -44,6 +44,8 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, and ignored-recording reason.
 - `logs` CLI command can show today's recent session records, emit recent records as JSONL, and open the log directory.
 - `--hotword` values are passed to both Whisper and Qwen polish payloads.
+- Listener mode detects the currently focused Windows app and passes the app name to Qwen as `app_name`.
+- Listener session logs include `app_name`; older logs before this feature show `app=unknown` in summaries.
 - Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
 - Qwen polish fails open to raw Whisper text on server error, timeout, invalid JSON, or unusable response.
 
@@ -103,10 +105,13 @@ Last known verification:
 
 ```text
 python -m pytest -q
-49 passed
+54 passed
 
 python -m compileall -q src tests
 OK
+
+active app smoke
+get_active_app_name() returned Code in the recent workspace
 
 python -m voicetype logs --help
 OK
@@ -117,6 +122,8 @@ OK
 
 ## Recent Commits
 
+- `76d91ff feat: pass active app context to Qwen`
+- `66e755f docs: update handoff for Chinese script preservation`
 - `0b1efe1 fix: preserve Chinese script in Qwen polish`
 - `54d1fd8 docs: update handoff after log CLI`
 - `9d8132d feat: add session log CLI`
@@ -142,11 +149,13 @@ OK
 - Audio files should be retained only for the current day, with cleanup based on local midnight at app startup.
 - Logs should exist so future debugging can inspect what happened without relying on terminal copy/paste.
 - Qwen cleanup must not convert Traditional Chinese speech/text to Simplified Chinese.
+- Qwen cleanup should receive the focused app context in listener mode so style can adapt to the target app.
 
 ## Useful Files
 
 - `src/voicetype/cli.py` - command parsing, listener loop, session logging hookup
 - `src/voicetype/audio.py` - recording, normalization, temp WAV cleanup
+- `src/voicetype/active_window.py` - focused Windows app/window detection
 - `src/voicetype/notifier.py` - console/toast/overlay notifications and overlay presentation rules
 - `src/voicetype/session_log.py` - JSONL session log writer and record builder
 - `src/voicetype/pipeline.py` - ASR, optional Qwen polish, paste orchestration
@@ -159,7 +168,7 @@ OK
 ## Suggested Next Steps
 
 1. Add an optional setting for log retention or cleanup if JSONL grows too large.
-2. Improve app context detection so Qwen can tailor polish style based on the active app.
+2. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
 3. Consider a tray app wrapper after the CLI listener is stable.
 4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
 5. Consider a compact `logs --last` command if today's log grows noisy during testing.
