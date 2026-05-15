@@ -4,7 +4,7 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest pushed commit: `9d8132d feat: add session log CLI`
+- Latest pushed commit: `0b1efe1 fix: preserve Chinese script in Qwen polish`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
@@ -44,6 +44,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, and ignored-recording reason.
 - `logs` CLI command can show today's recent session records, emit recent records as JSONL, and open the log directory.
 - `--hotword` values are passed to both Whisper and Qwen polish payloads.
+- Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
 - Qwen polish fails open to raw Whisper text on server error, timeout, invalid JSON, or unusable response.
 
 ## Common Commands
@@ -102,7 +103,7 @@ Last known verification:
 
 ```text
 python -m pytest -q
-48 passed
+49 passed
 
 python -m compileall -q src tests
 OK
@@ -116,6 +117,8 @@ OK
 
 ## Recent Commits
 
+- `0b1efe1 fix: preserve Chinese script in Qwen polish`
+- `54d1fd8 docs: update handoff after log CLI`
 - `9d8132d feat: add session log CLI`
 - `b6d8e2a docs: add VoiceType handoff`
 - `d07ee14 feat: pass hotwords to Qwen polish`
@@ -138,6 +141,7 @@ OK
 - `Captured...` and `Normalized audio...` are diagnostic and should stay out of the overlay.
 - Audio files should be retained only for the current day, with cleanup based on local midnight at app startup.
 - Logs should exist so future debugging can inspect what happened without relying on terminal copy/paste.
+- Qwen cleanup must not convert Traditional Chinese speech/text to Simplified Chinese.
 
 ## Useful Files
 
