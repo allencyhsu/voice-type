@@ -5,6 +5,7 @@ from pathlib import Path
 from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
+from voicetype.notifier import ConsoleNotifier
 from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
 from voicetype.settings import Settings
@@ -34,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     listen_parser.add_argument("--no-paste", action="store_true")
     listen_parser.add_argument("--no-llm", action="store_true")
     listen_parser.add_argument("--hotword", action="append", default=[])
+    listen_parser.add_argument("--min-seconds", type=float, default=None)
 
     return parser
 
@@ -95,7 +97,9 @@ def main() -> None:
 
 def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     recorder = ToggleRecorder(sample_rate=settings.sample_rate, channels=settings.channels)
+    notifier = ConsoleNotifier()
     lock = threading.Lock()
+    min_seconds = args.min_seconds or settings.min_record_seconds
 
     print("VoiceType ready. Press right Ctrl to start listening; press right Ctrl again to stop.")
     print("Press Ctrl+C in this terminal to quit.")
@@ -104,18 +108,22 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
         with lock:
             if not recorder.is_recording:
                 recorder.start()
-                print("[VoiceType] Listening...")
+                notifier.notify("Listening...")
                 return
 
-            print("[VoiceType] Processing...")
+            notifier.notify("Processing...")
             audio_path = recorder.stop_to_wav()
             recorded_seconds = recorder.duration_seconds
+            if not should_process_recording(recorded_seconds, min_seconds=min_seconds):
+                notifier.notify(f"Ignored short recording ({recorded_seconds:.2f}s < {min_seconds:.2f}s).")
+                return
+
             normalization = normalize_wav(audio_path)
             audio_bytes = audio_path.stat().st_size
-            print(f"[VoiceType] Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
+            notifier.notify(f"Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
             if normalization.applied:
-                print(
-                    "[VoiceType] Normalized audio "
+                notifier.notify(
+                    "Normalized audio "
                     f"gain={normalization.gain:.1f}x "
                     f"peak={normalization.peak_before:.4f}->{normalization.peak_after:.4f}"
                 )
@@ -151,3 +159,7 @@ def describe_pipeline_result(result: PipelineResult, *, paste_enabled: bool = Tr
             return f"[VoiceType] Inserted text. status={result.status}{suffix}"
         return result.final_text
     return f"[VoiceType] No text recognized. status={result.status}{suffix}"
+
+
+def should_process_recording(recorded_seconds: float, *, min_seconds: float) -> bool:
+    return recorded_seconds >= min_seconds

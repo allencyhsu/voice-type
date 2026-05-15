@@ -1,5 +1,5 @@
 import voicetype.__main__ as entrypoint
-from voicetype.cli import build_parser, describe_pipeline_result
+from voicetype.cli import build_parser, describe_pipeline_result, should_process_recording
 from voicetype.pipeline import PipelineResult
 
 
@@ -15,6 +15,19 @@ def test_cli_has_listen_command():
     assert args.command == "listen"
     assert args.no_llm is True
     assert args.no_paste is True
+
+
+def test_listen_parser_accepts_min_seconds_override():
+    parser = build_parser()
+
+    args = parser.parse_args(["listen", "--min-seconds", "1.25"])
+
+    assert args.min_seconds == 1.25
+
+
+def test_should_process_recording_enforces_min_duration():
+    assert should_process_recording(0.69, min_seconds=0.7) is False
+    assert should_process_recording(0.7, min_seconds=0.7) is True
 
 
 def test_describe_pipeline_result_explains_empty_transcript():

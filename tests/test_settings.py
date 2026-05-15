@@ -10,6 +10,7 @@ def test_default_settings_match_voice_type_services():
     assert settings.enable_llm is True
     assert settings.sample_rate == 16000
     assert settings.channels == 1
+    assert settings.min_record_seconds == 0.7
 
 
 def test_settings_read_environment_overrides(monkeypatch):

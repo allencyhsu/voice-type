@@ -14,3 +14,4 @@ class Settings(BaseSettings):
     sample_rate: int = 16000
     channels: int = 1
     record_seconds: float = Field(default=8.0, gt=0)
+    min_record_seconds: float = Field(default=0.7, gt=0)

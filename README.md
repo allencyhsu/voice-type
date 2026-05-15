@@ -61,11 +61,18 @@ Manual test flow:
 6. Press the right Ctrl key again to stop listening.
 7. VoiceType transcribes, optionally polishes with Qwen, and pastes through the clipboard into the focused input.
 
+Short accidental taps are ignored by default. A recording must be at least 0.7 seconds before VoiceType sends it to Whisper. Override this threshold with:
+
+```powershell
+python -m voicetype listen --min-seconds 1.0
+```
+
 The terminal prints status messages:
 
 ```text
 [VoiceType] Listening...
 [VoiceType] Processing...
+[VoiceType] Ignored short recording (0.31s < 0.70s).
 [VoiceType] Inserted text.
 ```
 
