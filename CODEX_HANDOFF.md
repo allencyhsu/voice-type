@@ -4,7 +4,7 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest pushed commit: `76d91ff feat: pass active app context to Qwen`
+- Latest pushed implementation commit: `913dcf2 feat: add tray CLI command`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
@@ -22,7 +22,9 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 
 ## Implemented Capabilities
 
-- CLI package with `doctor`, `transcribe`, `record`, and `listen` commands.
+- CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, and `tray` commands.
+- Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
+- Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
 - Right Ctrl toggles listener mode:
   - first press starts recording
   - second press stops recording, normalizes audio, transcribes, optionally polishes, and pastes through the clipboard
@@ -92,11 +94,20 @@ python -m voicetype logs --today --limit 5 --json
 python -m voicetype logs --open-dir
 ```
 
+Run tray mode:
+
+```powershell
+python -m voicetype tray
+.\.venv\Scripts\pythonw.exe -m voicetype tray
+```
+
 Verification:
 
 ```powershell
 python -m pytest -q
 python -m compileall -q src tests
+python -m voicetype --help
+python -m voicetype tray --help
 python -m voicetype logs --help
 python -m voicetype listen --help
 ```
@@ -105,10 +116,19 @@ Last known verification:
 
 ```text
 python -m pytest -q
-54 passed
+64 passed
 
 python -m compileall -q src tests
 OK
+
+python -m voicetype --help
+OK
+
+python -m voicetype tray --help
+OK
+
+controlled tray launch
+python -m voicetype tray stayed alive for 5 seconds and was stopped cleanly
 
 active app smoke
 get_active_app_name() returned Code in the recent workspace
@@ -122,6 +142,12 @@ OK
 
 ## Recent Commits
 
+- `913dcf2 feat: add tray CLI command`
+- `c20f526 feat: add tray controller`
+- `c00bfcf feat: add listener runtime wrapper`
+- `f1c9e98 feat: manage Windows startup entry`
+- `13e8fea chore: add tray dependencies`
+- `019c42d docs: plan tray app v1`
 - `76d91ff feat: pass active app context to Qwen`
 - `66e755f docs: update handoff for Chinese script preservation`
 - `0b1efe1 fix: preserve Chinese script in Qwen polish`
@@ -150,12 +176,17 @@ OK
 - Logs should exist so future debugging can inspect what happened without relying on terminal copy/paste.
 - Qwen cleanup must not convert Traditional Chinese speech/text to Simplified Chinese.
 - Qwen cleanup should receive the focused app context in listener mode so style can adapt to the target app.
+- Tray mode should remain a wrapper around the existing listener core. Do not fork the dictation logic.
+- Startup-at-login is currently implemented through a reversible Startup folder command file, not an installer.
 
 ## Useful Files
 
 - `src/voicetype/cli.py` - command parsing, listener loop, session logging hookup
 - `src/voicetype/audio.py` - recording, normalization, temp WAV cleanup
 - `src/voicetype/active_window.py` - focused Windows app/window detection
+- `src/voicetype/listener_runtime.py` - background runtime wrapper for listener mode
+- `src/voicetype/startup.py` - Windows Startup folder entry management
+- `src/voicetype/tray.py` - tray controller, menu actions, icon generation, and pystray entrypoint
 - `src/voicetype/notifier.py` - console/toast/overlay notifications and overlay presentation rules
 - `src/voicetype/session_log.py` - JSONL session log writer and record builder
 - `src/voicetype/pipeline.py` - ASR, optional Qwen polish, paste orchestration
@@ -169,11 +200,11 @@ OK
 
 ## Suggested Next Steps
 
-1. Execute `docs/superpowers/plans/2026-05-15-voice-type-tray-app.md`.
-2. Keep tray mode as a wrapper around the existing listener core.
-3. Add an optional setting for log retention or cleanup if JSONL grows too large.
-4. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
-5. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
+1. Manually validate tray icon right-click menu and Right Ctrl dictation flow from `python -m voicetype tray`.
+2. Add an optional setting for log retention or cleanup if JSONL grows too large.
+3. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
+4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
+5. Consider packaging or shortcut creation after tray mode has been manually exercised for a few sessions.
 
 ## Cautions
 
@@ -181,3 +212,4 @@ OK
 - Do not change the idle microphone behavior without explicit approval.
 - Do not make overlay diagnostic-heavy; keep diagnostics in terminal and logs.
 - Avoid long-term WAV retention until the user explicitly asks for it, because the files can contain private speech.
+- Do not replace the Startup folder approach with installer behavior until tray mode is stable.

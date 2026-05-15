@@ -51,6 +51,24 @@ Start the listener:
 python -m voicetype listen
 ```
 
+## Tray Mode
+
+Start VoiceType in the Windows system tray:
+
+```powershell
+python -m voicetype tray
+```
+
+Tray mode keeps the existing right Ctrl listener and overlay behavior. The microphone is still opened only while actively recording.
+
+For no-console startup, create a shortcut or startup entry that runs:
+
+```powershell
+.\.venv\Scripts\pythonw.exe -m voicetype tray
+```
+
+The tray menu includes status, logs, startup-at-login, and quit actions.
+
 Manual test flow:
 
 1. Open Notepad or another text input.
