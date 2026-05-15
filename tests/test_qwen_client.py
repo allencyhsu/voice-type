@@ -4,6 +4,31 @@ from voicetype.qwen_client import QwenClient
 
 
 @responses.activate
+def test_health_uses_chat_completions_preflight():
+    responses.post(
+        "http://example.test/v1/chat/completions",
+        json={
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"action":"insert","text":"ok"}'
+                    }
+                }
+            ]
+        },
+        status=200,
+    )
+
+    client = QwenClient("http://example.test/v1", "qwen3.6-35b", timeout_sec=5)
+
+    assert client.health() == {
+        "status": "available",
+        "endpoint": "http://example.test/v1/chat/completions",
+        "model": "qwen3.6-35b",
+    }
+
+
+@responses.activate
 def test_polish_returns_text_from_json_response():
     responses.post(
         "http://example.test/v1/chat/completions",

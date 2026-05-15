@@ -17,7 +17,7 @@
 - Create: `src/voicetype/__init__.py` - package marker.
 - Create: `src/voicetype/settings.py` - environment-based settings.
 - Create: `src/voicetype/whisper_client.py` - Faster Whisper health and transcription API client.
-- Create: `src/voicetype/qwen_client.py` - llama-server OpenAI-compatible chat client and JSON parsing.
+- Create: `src/voicetype/qwen_client.py` - llama-server OpenAI-compatible chat client, completions preflight, and JSON parsing.
 - Create: `src/voicetype/audio.py` - WAV recording helper.
 - Create: `src/voicetype/injector.py` - clipboard paste and typing fallback.
 - Create: `src/voicetype/pipeline.py` - dictation orchestration.
@@ -484,9 +484,27 @@ class QwenClient:
         self.timeout_sec = timeout_sec
 
     def health(self) -> dict[str, Any]:
-        response = requests.get(f"{self.base_url}/models", timeout=5)
+        response = requests.post(
+            f"{self.base_url}/chat/completions",
+            json={
+                "model": self.model,
+                "temperature": 0,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": 'Return exactly this JSON: {"action":"insert","text":"ok"}',
+                    }
+                ],
+            },
+            timeout=5,
+        )
         response.raise_for_status()
-        return response.json()
+        response.json()
+        return {
+            "status": "available",
+            "endpoint": f"{self.base_url}/chat/completions",
+            "model": self.model,
+        }
 
     def polish(self, raw_text: str, *, app_name: str | None = None) -> str:
         if not raw_text.strip():

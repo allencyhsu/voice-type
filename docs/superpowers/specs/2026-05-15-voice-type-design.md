@@ -154,7 +154,7 @@ Base URL:
 http://forge2.tail9d0481.ts.net:8001
 ```
 
-Primary endpoint:
+Primary endpoint and LLM health preflight:
 
 ```http
 POST /v1/chat/completions
@@ -166,7 +166,7 @@ Model setting:
 qwen3.6-35b
 ```
 
-The Qwen path must be optional. If the server is unavailable, returns an error, times out, or returns invalid JSON, VoiceType must paste the raw Whisper transcript when transcript text exists.
+The Qwen path must be optional. If the server is unavailable, returns an error, times out, or returns invalid JSON, VoiceType must paste the raw Whisper transcript when transcript text exists. The CLI doctor command should test the same `/v1/chat/completions` path used by polish requests instead of relying on `/v1/models`.
 
 Recommended request:
 

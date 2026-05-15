@@ -23,9 +23,27 @@ class QwenClient:
         self.timeout_sec = timeout_sec
 
     def health(self) -> dict[str, Any]:
-        response = requests.get(f"{self.base_url}/models", timeout=5)
+        response = requests.post(
+            f"{self.base_url}/chat/completions",
+            json={
+                "model": self.model,
+                "temperature": 0,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": 'Return exactly this JSON: {"action":"insert","text":"ok"}',
+                    }
+                ],
+            },
+            timeout=5,
+        )
         response.raise_for_status()
-        return response.json()
+        response.json()
+        return {
+            "status": "available",
+            "endpoint": f"{self.base_url}/chat/completions",
+            "model": self.model,
+        }
 
     def polish(self, raw_text: str, *, app_name: str | None = None) -> str:
         if not raw_text.strip():
