@@ -4,11 +4,11 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest pushed implementation commit: `913dcf2 feat: add tray CLI command`
+- Latest implementation commit covered by this handoff: `e0231bb fix: complete tray review follow-ups`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
-The worktree was clean after the latest push.
+The worktree was clean after the implementation commit. This handoff file was updated afterward to capture that state.
 
 ## Service Endpoints
 
@@ -24,11 +24,15 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 
 - CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, and `tray` commands.
 - Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
+- Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
+- Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory.
 - Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
+- Tray Quit stops the background listener/hotkey path before closing the icon.
 - Right Ctrl toggles listener mode:
   - first press starts recording
   - second press stops recording, normalizes audio, transcribes, optionally polishes, and pastes through the clipboard
 - Microphone is opened only during active recording. It is not kept open while idle.
+- If VoiceType exits while recording, the active audio stream is cancelled and closed instead of being left open.
 - Default status UI is a top-most Tk overlay above the Windows taskbar.
 - Overlay behavior:
   - `Listening...` remains visible until the next Right Ctrl press
@@ -44,7 +48,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Temporary WAV files are retained for the current local calendar day only. On startup, `voicetype-*.wav` older than local midnight are removed.
 - Listener session logs are written as JSONL to `%LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl`.
 - Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, and ignored-recording reason.
-- `logs` CLI command can show today's recent session records, emit recent records as JSONL, and open the log directory.
+- `logs` CLI command can show today's recent session records, show only the newest record with `--last`, emit records as JSONL, and open the log directory.
 - `--hotword` values are passed to both Whisper and Qwen polish payloads.
 - Listener mode detects the currently focused Windows app and passes the app name to Qwen as `app_name`.
 - Listener session logs include `app_name`; older logs before this feature show `app=unknown` in summaries.
@@ -91,6 +95,8 @@ Show recent session logs:
 python -m voicetype logs --today
 python -m voicetype logs --today --limit 5
 python -m voicetype logs --today --limit 5 --json
+python -m voicetype logs --last
+python -m voicetype logs --last --json
 python -m voicetype logs --open-dir
 ```
 
@@ -110,13 +116,14 @@ python -m voicetype --help
 python -m voicetype tray --help
 python -m voicetype logs --help
 python -m voicetype listen --help
+python -m voicetype logs --last --json
 ```
 
 Last known verification:
 
 ```text
 python -m pytest -q
-64 passed
+73 passed
 
 python -m compileall -q src tests
 OK
@@ -126,6 +133,9 @@ OK
 
 python -m voicetype tray --help
 OK
+
+python -m voicetype logs --last --json
+OK, printed the newest local session JSON record
 
 controlled tray launch
 python -m voicetype tray stayed alive for 5 seconds and was stopped cleanly
@@ -142,6 +152,8 @@ OK
 
 ## Recent Commits
 
+- `e0231bb fix: complete tray review follow-ups`
+- `467b802 docs: document tray mode`
 - `913dcf2 feat: add tray CLI command`
 - `c20f526 feat: add tray controller`
 - `c00bfcf feat: add listener runtime wrapper`
@@ -200,7 +212,7 @@ OK
 
 ## Suggested Next Steps
 
-1. Manually validate tray icon right-click menu and Right Ctrl dictation flow from `python -m voicetype tray`.
+1. Manually validate tray icon right-click menu, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
 2. Add an optional setting for log retention or cleanup if JSONL grows too large.
 3. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
 4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
