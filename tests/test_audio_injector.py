@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from voicetype.audio import ToggleRecorder, normalize_wav, record_wav
+from datetime import datetime
+
+from voicetype.audio import ToggleRecorder, cleanup_old_temp_audio, normalize_wav, record_wav
 from voicetype.injector import TextInjector
 
 
@@ -102,6 +104,33 @@ def test_normalize_wav_boosts_quiet_audio(tmp_path):
     assert result.gain > 1
     assert result.peak_before > 0
     assert abs(float(abs(boosted).max()) - 0.8) < 0.01
+
+
+def test_cleanup_old_temp_audio_removes_files_before_local_midnight(tmp_path):
+    old_file = tmp_path / "voicetype-old.wav"
+    today_file = tmp_path / "voicetype-today.wav"
+    other_file = tmp_path / "not-voicetype.wav"
+    for path in (old_file, today_file, other_file):
+        path.write_bytes(b"wav")
+
+    old_time = datetime(2026, 5, 14, 23, 59).timestamp()
+    today_time = datetime(2026, 5, 15, 0, 1).timestamp()
+    other_time = datetime(2026, 5, 14, 1, 0).timestamp()
+    old_file.touch()
+    today_file.touch()
+    other_file.touch()
+    import os
+
+    os.utime(old_file, (old_time, old_time))
+    os.utime(today_file, (today_time, today_time))
+    os.utime(other_file, (other_time, other_time))
+
+    result = cleanup_old_temp_audio(temp_dir=tmp_path, now=datetime(2026, 5, 15, 12, 0))
+
+    assert result.deleted == [old_file]
+    assert old_file.exists() is False
+    assert today_file.exists() is True
+    assert other_file.exists() is True
 
 
 class _FakeTemp:

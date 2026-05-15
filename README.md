@@ -93,6 +93,16 @@ If VoiceType prints `No text recognized`, check the diagnostic line before it:
 - `status=asr_failed` means the Whisper API returned a failed transcription response.
 - `error=...` shows the Whisper server error when it provides one.
 
+## Temporary Audio Retention
+
+VoiceType writes recorded WAV files to the Windows temp directory with names like:
+
+```text
+C:\Users\Allen\AppData\Local\Temp\voicetype-xxxx.wav
+```
+
+These files are kept for the current calendar day. Each time VoiceType starts, it removes `voicetype-*.wav` files whose modified time is earlier than local midnight for the current day. For example, when VoiceType starts on May 15 at 09:00, files from before May 15 00:00 are deleted, while files recorded after May 15 00:00 are retained.
+
 ## Disable LLM Polish
 
 ```powershell

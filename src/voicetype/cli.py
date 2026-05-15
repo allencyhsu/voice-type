@@ -2,7 +2,7 @@ import argparse
 import threading
 from pathlib import Path
 
-from voicetype.audio import ToggleRecorder, normalize_wav, record_wav
+from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
 from voicetype.pipeline import DictationPipeline, PipelineResult
@@ -39,6 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    cleanup = cleanup_old_temp_audio()
+    if cleanup.deleted:
+        print(f"[VoiceType] Cleaned {len(cleanup.deleted)} old temp audio file(s).")
+    if cleanup.failed:
+        print(f"[VoiceType] Could not clean {len(cleanup.failed)} temp audio file(s).")
+
     parser = build_parser()
     args = parser.parse_args()
     settings = Settings()

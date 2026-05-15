@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import tempfile
 
@@ -13,6 +14,12 @@ class AudioNormalization:
     gain: float
     peak_before: float
     peak_after: float
+
+
+@dataclass(frozen=True)
+class AudioCleanupResult:
+    deleted: list[Path]
+    failed: list[tuple[Path, str]]
 
 
 def record_wav(seconds: float, *, sample_rate: int, channels: int) -> Path:
@@ -51,6 +58,28 @@ def normalize_wav(path: str | Path, *, target_peak: float = 0.8, max_gain: float
         peak_before=peak_before,
         peak_after=peak_after,
     )
+
+
+def cleanup_old_temp_audio(
+    *,
+    temp_dir: str | Path | None = None,
+    now: datetime | None = None,
+) -> AudioCleanupResult:
+    cleanup_dir = Path(temp_dir) if temp_dir is not None else Path(tempfile.gettempdir())
+    current_time = now or datetime.now()
+    cutoff = current_time.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    deleted: list[Path] = []
+    failed: list[tuple[Path, str]] = []
+
+    for path in cleanup_dir.glob("voicetype-*.wav"):
+        try:
+            if path.stat().st_mtime < cutoff:
+                path.unlink()
+                deleted.append(path)
+        except OSError as exc:
+            failed.append((path, str(exc)))
+
+    return AudioCleanupResult(deleted=deleted, failed=failed)
 
 
 class ToggleRecorder:
