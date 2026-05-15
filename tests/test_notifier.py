@@ -64,6 +64,22 @@ def test_overlay_notifier_delegates_to_overlay_factory():
     assert calls == ["Processing..."]
 
 
+def test_overlay_notifier_suppresses_diagnostic_messages():
+    calls = []
+
+    class FakeOverlay:
+        def notify(self, message):
+            calls.append(message)
+
+    notifier = OverlayNotifier(overlay_factory=FakeOverlay)
+
+    notifier.notify("Captured 1.23s, 1234 bytes: C:\\Temp\\voicetype-test.wav")
+    notifier.notify("Normalized audio gain=50.0x peak=0.0100->0.5000")
+    notifier.notify("Listening...")
+
+    assert calls == ["Listening..."]
+
+
 def test_overlay_listening_status_stays_visible_until_next_status():
     presentation = overlay_presentation_for("Listening...")
 

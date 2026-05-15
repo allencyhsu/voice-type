@@ -1,5 +1,10 @@
 import voicetype.__main__ as entrypoint
-from voicetype.cli import build_parser, describe_pipeline_result, should_process_recording
+from voicetype.cli import (
+    build_parser,
+    describe_pipeline_result,
+    describe_pipeline_status,
+    should_process_recording,
+)
 from voicetype.pipeline import PipelineResult
 
 
@@ -61,3 +66,19 @@ def test_describe_pipeline_result_explains_empty_transcript():
     assert "No text recognized" in message
     assert "status=empty_transcript" in message
     assert "language=zh" in message
+
+
+def test_describe_pipeline_status_is_overlay_friendly_for_inserted_text():
+    message = describe_pipeline_status(
+        PipelineResult(status="inserted", raw_text="raw", final_text="final")
+    )
+
+    assert message == "Inserted text."
+
+
+def test_describe_pipeline_status_is_overlay_friendly_for_empty_transcript():
+    message = describe_pipeline_status(
+        PipelineResult(status="empty_transcript", raw_text="", final_text="")
+    )
+
+    assert message == "No text recognized."

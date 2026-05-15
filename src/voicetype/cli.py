@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import threading
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from voicetype.injector import TextInjector
 from voicetype.notifier import create_notifier
 from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
+from voicetype.session_log import SessionLogger, build_listen_session_record
 from voicetype.settings import Settings
 from voicetype.whisper_client import WhisperClient
 
@@ -99,8 +101,10 @@ def main() -> None:
 def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     recorder = ToggleRecorder(sample_rate=settings.sample_rate, channels=settings.channels)
     notifier = create_notifier(args.notify)
+    session_logger = SessionLogger()
     lock = threading.Lock()
     min_seconds = args.min_seconds or settings.min_record_seconds
+    recording_started_at = {"value": None}
 
     print("VoiceType ready. Press right Ctrl to start listening; press right Ctrl again to stop.")
     print("Press Ctrl+C in this terminal to quit.")
@@ -109,22 +113,41 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
         with lock:
             if not recorder.is_recording:
                 recorder.start()
+                recording_started_at["value"] = current_timestamp()
                 notifier.notify("Listening...")
                 return
 
             notifier.notify("Processing...")
             audio_path = recorder.stop_to_wav()
+            completed_at = current_timestamp()
+            segment_started_at = recording_started_at["value"]
+            recording_started_at["value"] = None
             recorded_seconds = recorder.duration_seconds
+            audio_bytes = audio_path.stat().st_size
             if not should_process_recording(recorded_seconds, min_seconds=min_seconds):
+                ignored_reason = f"short_recording:{recorded_seconds:.2f}s<{min_seconds:.2f}s"
+                append_session_record(
+                    session_logger,
+                    build_listen_session_record(
+                        started_at=segment_started_at,
+                        completed_at=completed_at,
+                        audio_path=audio_path,
+                        audio_seconds=recorded_seconds,
+                        audio_bytes=audio_bytes,
+                        normalization=None,
+                        result=None,
+                        pasted=False,
+                        ignored_reason=ignored_reason,
+                    ),
+                )
                 notifier.notify(f"Ignored short recording ({recorded_seconds:.2f}s < {min_seconds:.2f}s).")
                 return
 
             normalization = normalize_wav(audio_path)
-            audio_bytes = audio_path.stat().st_size
-            notifier.notify(f"Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
+            print(f"[VoiceType] Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
             if normalization.applied:
-                notifier.notify(
-                    "Normalized audio "
+                print(
+                    "[VoiceType] Normalized audio "
                     f"gain={normalization.gain:.1f}x "
                     f"peak={normalization.peak_before:.4f}->{normalization.peak_after:.4f}"
                 )
@@ -134,6 +157,21 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
             hotwords=args.hotword,
             paste=not args.no_paste,
         )
+        append_session_record(
+            session_logger,
+            build_listen_session_record(
+                started_at=segment_started_at,
+                completed_at=current_timestamp(),
+                audio_path=audio_path,
+                audio_seconds=recorded_seconds,
+                audio_bytes=audio_path.stat().st_size,
+                normalization=normalization,
+                result=result,
+                pasted=not args.no_paste and bool(result.final_text.strip()),
+            ),
+        )
+        if args.notify != "console":
+            notifier.notify(describe_pipeline_status(result, paste_enabled=not args.no_paste))
         print(describe_pipeline_result(result, paste_enabled=not args.no_paste))
 
     listener = RightCtrlToggleListener(toggle)
@@ -160,6 +198,25 @@ def describe_pipeline_result(result: PipelineResult, *, paste_enabled: bool = Tr
             return f"[VoiceType] Inserted text. status={result.status}{suffix}"
         return result.final_text
     return f"[VoiceType] No text recognized. status={result.status}{suffix}"
+
+
+def describe_pipeline_status(result: PipelineResult, *, paste_enabled: bool = True) -> str:
+    if result.final_text:
+        if paste_enabled:
+            return "Inserted text."
+        return "Transcribed text."
+    return "No text recognized."
+
+
+def current_timestamp() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def append_session_record(session_logger: SessionLogger, record: dict) -> None:
+    try:
+        session_logger.append(record)
+    except OSError as exc:
+        print(f"[VoiceType] Could not write session log: {exc}")
 
 
 def should_process_recording(recorded_seconds: float, *, min_seconds: float) -> bool:

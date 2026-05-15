@@ -98,9 +98,13 @@ The terminal prints status messages:
 ```text
 [VoiceType] Listening...
 [VoiceType] Processing...
+[VoiceType] Captured 4.50s, 143980 bytes: C:\Users\...\voicetype-abc.wav
+[VoiceType] Normalized audio gain=50.0x peak=0.0106->0.5310
 [VoiceType] Ignored short recording (0.31s < 0.70s).
 [VoiceType] Inserted text.
 ```
+
+The overlay only shows user-facing states such as `Listening...`, `Processing...`, `Inserted text.`, `No text recognized.`, and ignored short recordings. Diagnostic details such as captured file path and normalization gain stay in the terminal and session log.
 
 Use this mode without paste when you only want to inspect the final text:
 
@@ -135,6 +139,16 @@ C:\Users\Allen\AppData\Local\Temp\voicetype-xxxx.wav
 ```
 
 These files are kept for the current calendar day. Each time VoiceType starts, it removes `voicetype-*.wav` files whose modified time is earlier than local midnight for the current day. For example, when VoiceType starts on May 15 at 09:00, files from before May 15 00:00 are deleted, while files recorded after May 15 00:00 are retained.
+
+## Session Logs
+
+Each listener segment writes one JSONL record to:
+
+```text
+%LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl
+```
+
+The log includes the segment start/end time, WAV path, duration, byte size, normalization details, Whisper status, recognized text, final text, and whether text was pasted. Short ignored recordings are logged too, with an `ignored_reason`.
 
 ## Disable LLM Polish
 

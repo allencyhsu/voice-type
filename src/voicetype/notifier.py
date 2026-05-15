@@ -68,6 +68,8 @@ class OverlayNotifier:
         self._overlay = None
 
     def notify(self, message: str) -> None:
+        if is_diagnostic_message(message):
+            return
         if self._overlay is None:
             self._overlay = self.overlay_factory()
         self._overlay.notify(message)
@@ -83,6 +85,11 @@ def create_notifier(mode: str):
     if mode == "off":
         return NullNotifier()
     raise ValueError(f"Unsupported notifier mode: {mode}")
+
+
+def is_diagnostic_message(message: str) -> bool:
+    normalized = message.lower()
+    return normalized.startswith("captured ") or normalized.startswith("normalized audio ")
 
 
 def _load_toast_factory():
