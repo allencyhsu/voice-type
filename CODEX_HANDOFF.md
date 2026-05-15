@@ -4,7 +4,7 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest implementation commit covered by this handoff: `bdcb954 feat: switch toggle hotkey to right alt`
+- Latest implementation commit covered by this handoff: `8f32d6e revert: restore right ctrl toggle hotkey`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
@@ -23,19 +23,19 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 ## Implemented Capabilities
 
 - CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, and `tray` commands.
-- Tray mode wraps the existing listener runtime and keeps Right Alt as the recording toggle.
+- Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
 - Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
 - Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory.
 - Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
 - Tray Quit stops the background listener/hotkey path before closing the icon.
-- Right Alt toggles listener mode:
+- Right Ctrl toggles listener mode:
   - first press starts recording
   - second press stops recording, normalizes audio, transcribes, optionally polishes, and pastes through the clipboard
 - Microphone is opened only during active recording. It is not kept open while idle.
 - If VoiceType exits while recording, the active audio stream is cancelled and closed instead of being left open.
 - Default status UI is a top-most Tk overlay above the Windows taskbar.
 - Overlay behavior:
-  - `Listening...` remains visible until the next Right Alt press
+  - `Listening...` remains visible until the next Right Ctrl press
   - `Processing...`, `Inserted text.`, `No text recognized.`, and ignored-short-recording statuses auto-hide
   - diagnostic messages such as captured file path and normalization gain are not shown in the overlay
 - Optional notification modes:
@@ -152,7 +152,7 @@ OK
 
 ## Recent Commits
 
-- `bdcb954 feat: switch toggle hotkey to right alt`
+- `8f32d6e revert: restore right ctrl toggle hotkey`
 - `e0231bb fix: complete tray review follow-ups`
 - `467b802 docs: document tray mode`
 - `913dcf2 feat: add tray CLI command`
@@ -179,7 +179,7 @@ OK
 ## User Preferences and Decisions
 
 - Primary interaction should feel like Typeless: hotkey-driven, low-friction, and visible while listening.
-- Right Alt is the current toggle key.
+- Right Ctrl is the current toggle key.
 - The user does not want the microphone kept open while VoiceType is idle.
 - About 0.2 seconds of microphone cold-start latency is acceptable.
 - Toast notifications are less intuitive for this workflow; overlay is preferred.
@@ -213,7 +213,7 @@ OK
 
 ## Suggested Next Steps
 
-1. Manually validate tray icon right-click menu, `Show Latest Log`, Quit, and Right Alt dictation flow from `python -m voicetype tray`.
+1. Manually validate tray icon right-click menu, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
 2. Add an optional setting for log retention or cleanup if JSONL grows too large.
 3. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
 4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
