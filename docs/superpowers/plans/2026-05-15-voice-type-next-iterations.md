@@ -667,7 +667,7 @@ Create `docs/tray-readiness.md`:
 ## Current CLI contracts that must remain stable
 
 - `python -m voicetype listen`
-- Right Alt starts and stops recording.
+- Right Ctrl starts and stops recording.
 - The microphone is only open while actively recording.
 - Overlay remains visible while listening.
 - Logs are written to `%LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl`.

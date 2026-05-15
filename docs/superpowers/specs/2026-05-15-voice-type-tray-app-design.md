@@ -18,7 +18,7 @@ The first tray version should feel like a lightweight resident utility:
 
 1. User starts `python -m voicetype tray`, or clicks a shortcut that starts the same command through `pythonw.exe`.
 2. A VoiceType icon appears in the Windows tray.
-3. The existing Right Alt toggle works while the tray app is running.
+3. The existing Right Ctrl toggle works while the tray app is running.
 4. The existing top-most overlay still shows `Listening...`, `Processing...`, and final result statuses.
 5. The tray menu exposes practical commands:
    - status label
@@ -27,7 +27,7 @@ The first tray version should feel like a lightweight resident utility:
    - enable or disable startup at login
    - quit VoiceType
 
-The tray icon is not the recording trigger in v1. Recording remains controlled by Right Alt so that the existing tested flow remains stable.
+The tray icon is not the recording trigger in v1. Recording remains controlled by Right Ctrl so that the existing tested flow remains stable.
 
 ## Architecture
 
@@ -109,7 +109,7 @@ Manual smoke checks are still required on Windows for:
 
 - `python -m voicetype tray`
 - right-click tray menu appears
-- Right Alt listener still works
+- Right Ctrl listener still works
 - startup entry enable/disable creates/removes the expected file
 - `Quit VoiceType` stops the tray app
 
@@ -117,7 +117,7 @@ Manual smoke checks are still required on Windows for:
 
 - `python -m voicetype tray` starts without opening a terminal when run via `pythonw.exe`.
 - Tray icon appears.
-- Existing Right Alt listener works from tray mode.
+- Existing Right Ctrl listener works from tray mode.
 - Tray menu can open logs directory.
 - Tray menu can show latest log.
 - Tray menu can enable and disable startup at login.

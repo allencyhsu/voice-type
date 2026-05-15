@@ -661,16 +661,16 @@ Expected:
 - Right-click menu appears.
 - Status item displays current runtime status.
 
-- [ ] **Step 2: Verify Right Alt flow**
+- [ ] **Step 2: Verify Right Ctrl flow**
 
 Manual steps:
 
 1. Open Notepad or another text input.
 2. Put the caret in the input field.
-3. Press Right Alt once.
+3. Press Right Ctrl once.
 4. Confirm overlay shows `Listening...`.
 5. Speak one short sentence.
-6. Press Right Alt again.
+6. Press Right Ctrl again.
 7. Confirm overlay shows `Processing...`.
 8. Confirm text is pasted into the focused input.
 9. Run:
@@ -736,7 +736,7 @@ For no-console startup, create a shortcut or startup entry that runs:
 .\.venv\Scripts\pythonw.exe -m voicetype tray
 ```
 
-Tray mode keeps the existing Right Alt listener and overlay behavior. The microphone is still opened only while actively recording.
+Tray mode keeps the existing Right Ctrl listener and overlay behavior. The microphone is still opened only while actively recording.
 ```
 
 - [ ] **Step 6: Update handoff**
@@ -787,7 +787,7 @@ git push origin feature/voice-type-mvp
 - [ ] `python -m voicetype tray --help`
 - [ ] `python -m voicetype logs --today --limit 1`
 - [ ] manual tray icon appears
-- [ ] Right Alt listener works from tray mode
+- [ ] Right Ctrl listener works from tray mode
 - [ ] Startup entry toggle creates/removes `VoiceType.cmd`
 - [ ] Quit removes tray icon
 - [ ] `git status --short --branch` is clean
