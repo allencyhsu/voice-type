@@ -56,6 +56,9 @@ def build_parser() -> argparse.ArgumentParser:
     logs_parser.add_argument("--json", action="store_true")
     logs_parser.add_argument("--open-dir", action="store_true")
 
+    tray_parser = subparsers.add_parser("tray")
+    tray_parser.set_defaults(command="tray")
+
     return parser
 
 
@@ -71,6 +74,12 @@ def main() -> None:
 
     if args.command == "logs":
         run_logs(args)
+        return
+
+    if args.command == "tray":
+        from voicetype.tray import run_tray_app
+
+        run_tray_app()
         return
 
     settings = Settings()

@@ -60,6 +60,14 @@ def test_logs_parser_accepts_today_limit_json_and_open_dir():
     assert args.open_dir is True
 
 
+def test_cli_has_tray_command():
+    parser = build_parser()
+
+    args = parser.parse_args(["tray"])
+
+    assert args.command == "tray"
+
+
 def test_should_process_recording_enforces_min_duration():
     assert should_process_recording(0.69, min_seconds=0.7) is False
     assert should_process_recording(0.7, min_seconds=0.7) is True
