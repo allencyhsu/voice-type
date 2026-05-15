@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 
+from voicetype.audio import record_wav
 from voicetype.injector import TextInjector
 from voicetype.pipeline import DictationPipeline
 from voicetype.qwen_client import QwenClient
@@ -21,6 +22,12 @@ def main() -> None:
     transcribe_parser.add_argument("--no-llm", action="store_true")
     transcribe_parser.add_argument("--hotword", action="append", default=[])
 
+    record_parser = subparsers.add_parser("record")
+    record_parser.add_argument("--seconds", type=float, default=None)
+    record_parser.add_argument("--paste", action="store_true")
+    record_parser.add_argument("--no-llm", action="store_true")
+    record_parser.add_argument("--hotword", action="append", default=[])
+
     args = parser.parse_args()
     settings = Settings()
     whisper = WhisperClient(settings.whisper_url, timeout_sec=settings.asr_timeout_sec)
@@ -39,6 +46,14 @@ def main() -> None:
     if enable_llm:
         qwen = QwenClient(settings.llm_base_url, settings.llm_model, settings.llm_timeout_sec)
 
+    audio_file = getattr(args, "audio_file", None)
+    if args.command == "record":
+        audio_file = record_wav(
+            args.seconds or settings.record_seconds,
+            sample_rate=settings.sample_rate,
+            channels=settings.channels,
+        )
+
     pipeline = DictationPipeline(
         whisper,
         qwen,
@@ -46,7 +61,7 @@ def main() -> None:
         enable_llm=enable_llm,
     )
     final_text = pipeline.process_file(
-        args.audio_file,
+        audio_file,
         hotwords=args.hotword,
         paste=args.paste,
     )
