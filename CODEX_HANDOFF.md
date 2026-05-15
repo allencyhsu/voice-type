@@ -163,15 +163,17 @@ OK
 - `src/voicetype/whisper_client.py` - Faster Whisper HTTP client
 - `README.md` - user-facing setup and test instructions
 - `docs/superpowers/specs/2026-05-15-voice-type-design.md` - original design spec
+- `docs/superpowers/specs/2026-05-15-voice-type-tray-app-design.md` - Tray App v1 design
 - `docs/superpowers/plans/2026-05-15-voice-type-mvp.md` - original implementation plan
+- `docs/superpowers/plans/2026-05-15-voice-type-tray-app.md` - Tray App v1 implementation plan
 
 ## Suggested Next Steps
 
-1. Add an optional setting for log retention or cleanup if JSONL grows too large.
-2. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
-3. Consider a tray app wrapper after the CLI listener is stable.
-4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
-5. Consider a compact `logs --last` command if today's log grows noisy during testing.
+1. Execute `docs/superpowers/plans/2026-05-15-voice-type-tray-app.md`.
+2. Keep tray mode as a wrapper around the existing listener core.
+3. Add an optional setting for log retention or cleanup if JSONL grows too large.
+4. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
+5. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
 
 ## Cautions
 
