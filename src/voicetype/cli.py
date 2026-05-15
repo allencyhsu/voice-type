@@ -2,7 +2,7 @@ import argparse
 import threading
 from pathlib import Path
 
-from voicetype.audio import ToggleRecorder, record_wav
+from voicetype.audio import ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
 from voicetype.pipeline import DictationPipeline, PipelineResult
@@ -77,6 +77,7 @@ def main() -> None:
             sample_rate=settings.sample_rate,
             channels=settings.channels,
         )
+        normalize_wav(audio_file)
 
     final_text = pipeline.process_file(
         audio_file,
@@ -103,8 +104,15 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
             print("[VoiceType] Processing...")
             audio_path = recorder.stop_to_wav()
             recorded_seconds = recorder.duration_seconds
+            normalization = normalize_wav(audio_path)
             audio_bytes = audio_path.stat().st_size
             print(f"[VoiceType] Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
+            if normalization.applied:
+                print(
+                    "[VoiceType] Normalized audio "
+                    f"gain={normalization.gain:.1f}x "
+                    f"peak={normalization.peak_before:.4f}->{normalization.peak_after:.4f}"
+                )
 
         result = pipeline.process_file_result(
             audio_path,

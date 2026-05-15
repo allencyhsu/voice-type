@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from voicetype.audio import ToggleRecorder, record_wav
+from voicetype.audio import ToggleRecorder, normalize_wav, record_wav
 from voicetype.injector import TextInjector
 
 
@@ -85,6 +85,23 @@ def test_text_injector_copies_text_and_pastes(monkeypatch):
         ("sleep", 0.05),
         ("hotkey", ("ctrl", "v")),
     ]
+
+
+def test_normalize_wav_boosts_quiet_audio(tmp_path):
+    path = tmp_path / "quiet.wav"
+    sf_data = [[0.01], [-0.02], [0.0]]
+    import soundfile as sf
+
+    sf.write(path, sf_data, 16000)
+
+    result = normalize_wav(path, target_peak=0.8, max_gain=50.0)
+    boosted, sample_rate = sf.read(path, dtype="float32", always_2d=True)
+
+    assert sample_rate == 16000
+    assert result.applied is True
+    assert result.gain > 1
+    assert result.peak_before > 0
+    assert abs(float(abs(boosted).max()) - 0.8) < 0.01
 
 
 class _FakeTemp:

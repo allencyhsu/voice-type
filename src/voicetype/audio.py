@@ -1,9 +1,18 @@
+from dataclasses import dataclass
 from pathlib import Path
 import tempfile
 
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
+
+
+@dataclass(frozen=True)
+class AudioNormalization:
+    applied: bool
+    gain: float
+    peak_before: float
+    peak_after: float
 
 
 def record_wav(seconds: float, *, sample_rate: int, channels: int) -> Path:
@@ -15,6 +24,33 @@ def record_wav(seconds: float, *, sample_rate: int, channels: int) -> Path:
     path = Path(temp.name)
     sf.write(path, recording, sample_rate)
     return path
+
+
+def normalize_wav(path: str | Path, *, target_peak: float = 0.8, max_gain: float = 50.0) -> AudioNormalization:
+    wav_path = Path(path)
+    audio, sample_rate = sf.read(wav_path, dtype="float32", always_2d=True)
+    peak_before = float(np.max(np.abs(audio))) if audio.size else 0.0
+    if peak_before <= 0:
+        return AudioNormalization(applied=False, gain=1.0, peak_before=0.0, peak_after=0.0)
+
+    gain = min(target_peak / peak_before, max_gain)
+    if gain <= 1.0:
+        return AudioNormalization(
+            applied=False,
+            gain=1.0,
+            peak_before=peak_before,
+            peak_after=peak_before,
+        )
+
+    normalized = np.clip(audio * gain, -1.0, 1.0)
+    sf.write(wav_path, normalized, sample_rate)
+    peak_after = float(np.max(np.abs(normalized))) if normalized.size else 0.0
+    return AudioNormalization(
+        applied=True,
+        gain=gain,
+        peak_before=peak_before,
+        peak_after=peak_after,
+    )
 
 
 class ToggleRecorder:
