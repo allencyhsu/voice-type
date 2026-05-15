@@ -114,6 +114,7 @@ def test_format_log_summary_includes_debug_fields():
             {
                 "completed_at": "2026-05-15T09:30:04+08:00",
                 "audio": {"seconds": 4.2, "path": "C:/Temp/voicetype-test.wav"},
+                "app_name": "notepad",
                 "asr": {
                     "status": "inserted",
                     "language": "zh",
@@ -127,7 +128,7 @@ def test_format_log_summary_includes_debug_fields():
     )
 
     assert lines == [
-        "2026-05-15T09:30:04+08:00 | 4.20s | inserted | zh | asr=0.30s | pasted=yes | hello world | C:/Temp/voicetype-test.wav"
+        "2026-05-15T09:30:04+08:00 | app=notepad | 4.20s | inserted | zh | asr=0.30s | pasted=yes | hello world | C:/Temp/voicetype-test.wav"
     ]
 
 

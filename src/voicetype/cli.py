@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from voicetype.active_window import get_active_app_name
 from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
@@ -144,6 +145,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
             recording_started_at["value"] = None
             recorded_seconds = recorder.duration_seconds
             audio_bytes = audio_path.stat().st_size
+            app_name = get_active_app_name()
             if not should_process_recording(recorded_seconds, min_seconds=min_seconds):
                 ignored_reason = f"short_recording:{recorded_seconds:.2f}s<{min_seconds:.2f}s"
                 append_session_record(
@@ -157,6 +159,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
                         normalization=None,
                         result=None,
                         pasted=False,
+                        app_name=app_name,
                         ignored_reason=ignored_reason,
                     ),
                 )
@@ -174,6 +177,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
 
         result = pipeline.process_file_result(
             audio_path,
+            app_name=app_name,
             hotwords=args.hotword,
             paste=not args.no_paste,
         )
@@ -188,6 +192,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
                 normalization=normalization,
                 result=result,
                 pasted=not args.no_paste and bool(result.final_text.strip()),
+                app_name=app_name,
             ),
         )
         if args.notify != "console":
@@ -293,13 +298,14 @@ def format_log_record(record: dict[str, Any]) -> str:
     language = asr.get("language") or "-"
     transcribe_time = asr.get("transcribe_time")
     pasted = "yes" if record.get("pasted") else "no"
+    app_name = record.get("app_name") or "unknown"
     text = summarize_text(asr.get("final_text") or asr.get("raw_text") or record.get("ignored_reason") or "")
     path = audio.get("path") or "-"
 
     seconds_text = f"{seconds:.2f}s" if isinstance(seconds, int | float) else "-s"
     asr_text = f"asr={transcribe_time:.2f}s" if isinstance(transcribe_time, int | float) else "asr=-"
     return (
-        f"{record.get('completed_at', '-')} | {seconds_text} | {status} | {language} | "
+        f"{record.get('completed_at', '-')} | app={app_name} | {seconds_text} | {status} | {language} | "
         f"{asr_text} | pasted={pasted} | {text} | {path}"
     )
 

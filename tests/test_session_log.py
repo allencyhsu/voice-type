@@ -78,9 +78,11 @@ def test_build_listen_session_record_keeps_audio_and_result_details():
             transcribe_time=0.3,
         ),
         pasted=True,
+        app_name="notepad",
     )
 
     assert record["event"] == "listen_segment"
+    assert record["app_name"] == "notepad"
     assert record["audio"]["path"] == "C:/Temp/voicetype-test.wav"
     assert record["audio"]["bytes"] == 12345
     assert record["normalization"]["applied"] is True

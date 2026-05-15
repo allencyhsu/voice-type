@@ -126,6 +126,8 @@ python -m voicetype listen --hotword Typeless --hotword "Faster Whisper"
 
 Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
 
+In listener mode, VoiceType also detects the currently focused Windows app and passes the app name to Qwen so the polish step can account for the target writing context.
+
 If VoiceType prints `No text recognized`, check the diagnostic line before it:
 
 ```text
@@ -156,7 +158,7 @@ Each listener segment writes one JSONL record to:
 %LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl
 ```
 
-The log includes the segment start/end time, WAV path, duration, byte size, normalization details, Whisper status, recognized text, final text, and whether text was pasted. Short ignored recordings are logged too, with an `ignored_reason`.
+The log includes the segment start/end time, focused app name, WAV path, duration, byte size, normalization details, Whisper status, recognized text, final text, and whether text was pasted. Short ignored recordings are logged too, with an `ignored_reason`.
 
 Show recent records from today's log:
 

@@ -71,12 +71,14 @@ def build_listen_session_record(
     normalization: AudioNormalization | None,
     result: PipelineResult | None,
     pasted: bool,
+    app_name: str | None = None,
     ignored_reason: str | None = None,
 ) -> dict[str, Any]:
     return {
         "event": "listen_segment",
         "started_at": started_at,
         "completed_at": completed_at,
+        "app_name": app_name,
         "audio": {
             "path": audio_path.as_posix(),
             "seconds": audio_seconds,

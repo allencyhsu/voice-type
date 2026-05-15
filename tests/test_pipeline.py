@@ -16,6 +16,7 @@ class FakeWhisper:
 class FakeQwen:
     def __init__(self):
         self.hotwords = None
+        self.app_name = None
 
     def polish(
         self,
@@ -25,6 +26,7 @@ class FakeQwen:
         hotwords: list[str] | None = None,
     ) -> str:
         self.hotwords = hotwords
+        self.app_name = app_name
         return f"polished: {raw_text}"
 
 
@@ -47,11 +49,13 @@ def test_pipeline_pastes_polished_text_when_llm_enabled(tmp_path):
         )
     )
 
-    pipeline = DictationPipeline(whisper, FakeQwen(), injector, enable_llm=True)
+    qwen = FakeQwen()
+    pipeline = DictationPipeline(whisper, qwen, injector, enable_llm=True)
     result = pipeline.process_file(audio_path, app_name="Notepad")
 
     assert result == "polished: hello"
     assert injector.text == "polished: hello"
+    assert qwen.app_name == "Notepad"
 
 
 def test_pipeline_passes_hotwords_to_qwen(tmp_path):
