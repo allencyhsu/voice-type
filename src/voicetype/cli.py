@@ -10,6 +10,7 @@ from voicetype.active_window import get_active_app_name
 from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
+from voicetype.memory import CorrectionMemoryStore, CorrectionType
 from voicetype.notifier import create_notifier
 from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
@@ -58,6 +59,25 @@ def build_parser() -> argparse.ArgumentParser:
     logs_parser.add_argument("--json", action="store_true")
     logs_parser.add_argument("--open-dir", action="store_true")
 
+    memory_parser = subparsers.add_parser("memory")
+    memory_parser.set_defaults(command="memory")
+    memory_subparsers = memory_parser.add_subparsers(dest="memory_command", required=True)
+
+    memory_add = memory_subparsers.add_parser("add")
+    memory_add.add_argument("--type", choices=["term", "phrase"], required=True)
+    memory_add.add_argument("--wrong", default="")
+    memory_add.add_argument("--correct", required=True)
+
+    memory_list = memory_subparsers.add_parser("list")
+    memory_list.add_argument("--json", action="store_true")
+
+    memory_remove = memory_subparsers.add_parser("remove")
+    memory_remove.add_argument("id")
+
+    memory_learn = memory_subparsers.add_parser("learn")
+    memory_learn.add_argument("--from-last", action="store_true", required=True)
+    memory_learn.add_argument("--corrected", required=True)
+
     tray_parser = subparsers.add_parser("tray")
     tray_parser.set_defaults(command="tray")
 
@@ -76,6 +96,10 @@ def main() -> None:
 
     if args.command == "logs":
         run_logs(args)
+        return
+
+    if args.command == "memory":
+        run_memory(args)
         return
 
     if args.command == "tray":
@@ -266,6 +290,48 @@ def run_logs(args) -> None:
     print(f"[VoiceType] Session log: {path}")
     for line in format_log_summary(records, limit=args.limit):
         print(line)
+
+
+def run_memory(args) -> None:
+    store = CorrectionMemoryStore()
+    if args.memory_command == "add":
+        entry = store.add(CorrectionType(args.type), wrong=args.wrong, correct=args.correct)
+        print(json.dumps(entry.to_dict(), ensure_ascii=False, separators=(",", ":")))
+        return
+
+    if args.memory_command == "list":
+        entries = store.load()
+        if args.json:
+            for entry in entries:
+                print(json.dumps(entry.to_dict(), ensure_ascii=False, separators=(",", ":")))
+            return
+        if not entries:
+            print("[VoiceType] No correction memory entries.")
+            return
+        for entry in entries:
+            print(f"{entry.id} | {entry.type.value} | {entry.wrong or '-'} -> {entry.correct}")
+        return
+
+    if args.memory_command == "remove":
+        removed = store.remove(args.id)
+        if removed:
+            print(f"[VoiceType] Removed correction memory entry: {args.id}")
+            return
+        print(f"[VoiceType] No correction memory entry found: {args.id}")
+        return
+
+    if args.memory_command == "learn":
+        record = latest_session_record()
+        if record is None:
+            print("[VoiceType] No latest session log record found.")
+            return
+        asr = record.get("asr") or {}
+        raw_text = str(asr.get("raw_text") or "")
+        if not raw_text.strip():
+            print("[VoiceType] Latest session has no raw ASR text.")
+            return
+        entry = store.add(CorrectionType.PHRASE, wrong=raw_text, correct=args.corrected)
+        print(json.dumps(entry.to_dict(), ensure_ascii=False, separators=(",", ":")))
 
 
 def open_log_dir(log_dir: Path) -> None:

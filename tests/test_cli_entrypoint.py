@@ -78,6 +78,29 @@ def test_cli_has_tray_command():
     assert args.command == "tray"
 
 
+def test_memory_add_parser_accepts_term_correction():
+    parser = build_parser()
+    args = parser.parse_args(
+        ["memory", "add", "--type", "term", "--wrong", "cue and", "--correct", "Qwen"]
+    )
+
+    assert args.command == "memory"
+    assert args.memory_command == "add"
+    assert args.type == "term"
+    assert args.wrong == "cue and"
+    assert args.correct == "Qwen"
+
+
+def test_memory_learn_parser_accepts_from_last_corrected_text():
+    parser = build_parser()
+    args = parser.parse_args(["memory", "learn", "--from-last", "--corrected", "Qwen is ready"])
+
+    assert args.command == "memory"
+    assert args.memory_command == "learn"
+    assert args.from_last is True
+    assert args.corrected == "Qwen is ready"
+
+
 def test_should_process_recording_enforces_min_duration():
     assert should_process_recording(0.69, min_seconds=0.7) is False
     assert should_process_recording(0.7, min_seconds=0.7) is True
