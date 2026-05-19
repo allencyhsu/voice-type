@@ -4,7 +4,7 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/voice-type-mvp`
-- Latest implementation commit covered by this handoff: `8f32d6e revert: restore right ctrl toggle hotkey`
+- Latest implementation commit covered by this handoff: `597ff28 feat: add correction memory CLI`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
 - Python environment: local `.venv`
 
@@ -22,7 +22,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 
 ## Implemented Capabilities
 
-- CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, and `tray` commands.
+- CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, `memory`, and `tray` commands.
 - Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
 - Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
 - Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory.
@@ -47,9 +47,13 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Very short accidental recordings are ignored by `min_record_seconds`, default `0.7`.
 - Temporary WAV files are retained for the current local calendar day only. On startup, `voicetype-*.wav` older than local midnight are removed.
 - Listener session logs are written as JSONL to `%LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl`.
-- Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, and ignored-recording reason.
+- Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, correction memory metadata, Whisper hotword filtering metadata, and ignored-recording reason.
 - `logs` CLI command can show today's recent session records, show only the newest record with `--last`, emit records as JSONL, and open the log directory.
-- `--hotword` values are passed to both Whisper and Qwen polish payloads.
+- `--hotword` values are passed to Qwen polish payloads. Faster Whisper receives only the filtered hotword shortlist.
+- Faster Whisper hotwords are capped to five entries of five Unicode characters each.
+- Phrase corrections and long terms are sent only to Qwen, not Faster Whisper.
+- Correction Memory v1 stores local term and phrase corrections in `%LOCALAPPDATA%\VoiceType\memory\corrections.jsonl`.
+- The `memory` CLI can add, list, remove, and learn conservative phrase corrections from the latest session log.
 - Listener mode detects the currently focused Windows app and passes the app name to Qwen as `app_name`.
 - Listener session logs include `app_name`; older logs before this feature show `app=unknown` in summaries.
 - Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
@@ -80,7 +84,17 @@ python -m voicetype listen --no-paste --no-llm
 Run with hotwords:
 
 ```powershell
-python -m voicetype listen --hotword Typeless --hotword "Faster Whisper"
+python -m voicetype listen --hotword Qwen --hotword Allen
+```
+
+Manage correction memory:
+
+```powershell
+python -m voicetype memory add --type term --wrong "cue and" --correct "Qwen"
+python -m voicetype memory add --type phrase --wrong "重新開幾" --correct "重新開機"
+python -m voicetype memory list
+python -m voicetype memory remove <id>
+python -m voicetype memory learn --from-last --corrected "corrected final text"
 ```
 
 Check services:
@@ -116,6 +130,8 @@ python -m voicetype --help
 python -m voicetype tray --help
 python -m voicetype logs --help
 python -m voicetype listen --help
+python -m voicetype memory --help
+python -m voicetype memory add --help
 python -m voicetype logs --last --json
 ```
 
@@ -148,10 +164,23 @@ OK
 
 python -m voicetype listen --help
 OK
+
+python -m voicetype memory --help
+OK
+
+python -m voicetype memory add --help
+OK
 ```
 
 ## Recent Commits
 
+- `597ff28 feat: add correction memory CLI`
+- `f5ac281 feat: use correction memory in pipeline`
+- `c05785a feat: send correction memory to Qwen`
+- `beef3a4 feat: cap Faster Whisper hotwords`
+- `17e1efe feat: add correction memory store`
+- `52ce2fb docs: plan correction memory v1`
+- `ad561b9 docs: design correction memory v1`
 - `8f32d6e revert: restore right ctrl toggle hotkey`
 - `e0231bb fix: complete tray review follow-ups`
 - `467b802 docs: document tray mode`
@@ -189,6 +218,8 @@ OK
 - Logs should exist so future debugging can inspect what happened without relying on terminal copy/paste.
 - Qwen cleanup must not convert Traditional Chinese speech/text to Simplified Chinese.
 - Qwen cleanup should receive the focused app context in listener mode so style can adapt to the target app.
+- Correction memory should be used by Qwen as the main repair layer; do not grow Faster Whisper hotwords into a dictionary.
+- Faster Whisper should receive at most five short hotwords, each five Unicode characters or fewer.
 - Tray mode should remain a wrapper around the existing listener core. Do not fork the dictation logic.
 - Startup-at-login is currently implemented through a reversible Startup folder command file, not an installer.
 
@@ -203,25 +234,29 @@ OK
 - `src/voicetype/notifier.py` - console/toast/overlay notifications and overlay presentation rules
 - `src/voicetype/session_log.py` - JSONL session log writer and record builder
 - `src/voicetype/pipeline.py` - ASR, optional Qwen polish, paste orchestration
+- `src/voicetype/memory.py` - local correction memory store, selector, and Whisper hotword filter
 - `src/voicetype/qwen_client.py` - llama-server chat completions client and fail-open JSON parsing
 - `src/voicetype/whisper_client.py` - Faster Whisper HTTP client
 - `README.md` - user-facing setup and test instructions
 - `docs/superpowers/specs/2026-05-15-voice-type-design.md` - original design spec
 - `docs/superpowers/specs/2026-05-15-voice-type-tray-app-design.md` - Tray App v1 design
 - `docs/superpowers/plans/2026-05-15-voice-type-mvp.md` - original implementation plan
+- `docs/superpowers/specs/2026-05-19-voice-type-correction-memory-design.md` - Correction Memory v1 design
 - `docs/superpowers/plans/2026-05-15-voice-type-tray-app.md` - Tray App v1 implementation plan
+- `docs/superpowers/plans/2026-05-19-voice-type-correction-memory.md` - Correction Memory v1 implementation plan
 
 ## Suggested Next Steps
 
 1. Manually validate tray icon right-click menu, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
 2. Add an optional setting for log retention or cleanup if JSONL grows too large.
-3. Improve the Qwen prompt with explicit app-specific style hints now that app context is available.
+3. Improve the Qwen prompt with explicit app-specific style hints now that app context and correction memory are available.
 4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
 5. Consider packaging or shortcut creation after tray mode has been manually exercised for a few sessions.
 
 ## Cautions
 
 - Do not replace the current Qwen endpoint with `forge2`; the corrected host is `ai-srv.tail9d0481.ts.net`.
+- Do not send full correction memory, contact lists, project glossaries, or long terms to Faster Whisper.
 - Do not change the idle microphone behavior without explicit approval.
 - Do not make overlay diagnostic-heavy; keep diagnostics in terminal and logs.
 - Avoid long-term WAV retention until the user explicitly asks for it, because the files can contain private speech.

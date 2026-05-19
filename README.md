@@ -136,15 +136,47 @@ Use this mode to isolate microphone and Whisper behavior without Qwen or paste:
 python -m voicetype listen --no-paste --no-llm
 ```
 
-Use hotwords for product names, tools, people, or domain terms that Whisper and Qwen should preserve:
+Use hotwords sparingly for short product names, tools, people, or domain terms that Whisper and Qwen should preserve:
 
 ```powershell
-python -m voicetype listen --hotword Typeless --hotword "Faster Whisper"
+python -m voicetype listen --hotword Qwen --hotword Allen
 ```
+
+Faster Whisper receives at most five hotwords, and each hotword must be five Unicode characters or fewer. Longer terms and phrase corrections should go into correction memory so Qwen can apply them after ASR.
 
 Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
 
 In listener mode, VoiceType also detects the currently focused Windows app and passes the app name to Qwen so the polish step can account for the target writing context.
+
+## Correction Memory
+
+VoiceType uses Qwen, not Faster Whisper, as the main correction layer. Faster Whisper receives only a tiny hotword hint list. Longer vocabulary and phrase corrections are stored locally and sent only to Qwen when relevant.
+
+Correction memory is stored at:
+
+```text
+%LOCALAPPDATA%\VoiceType\memory\corrections.jsonl
+```
+
+Add corrections:
+
+```powershell
+python -m voicetype memory add --type term --wrong "cue and" --correct "Qwen"
+python -m voicetype memory add --type phrase --wrong "重新開幾" --correct "重新開機"
+```
+
+List or remove corrections:
+
+```powershell
+python -m voicetype memory list
+python -m voicetype memory remove <id>
+```
+
+Learn a conservative phrase correction from the latest session log:
+
+```powershell
+python -m voicetype memory learn --from-last --corrected "corrected final text"
+```
 
 If VoiceType prints `No text recognized`, check the diagnostic line before it:
 
