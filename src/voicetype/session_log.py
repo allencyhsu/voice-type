@@ -85,6 +85,7 @@ def build_listen_session_record(
     app_name: str | None = None,
     ignored_reason: str | None = None,
 ) -> dict[str, Any]:
+    result_dict = _result_dict(result)
     return {
         "event": "listen_segment",
         "started_at": started_at,
@@ -96,7 +97,8 @@ def build_listen_session_record(
             "bytes": audio_bytes,
         },
         "normalization": _normalization_dict(normalization),
-        "asr": _result_dict(result),
+        "asr": result_dict,
+        "memory": result_dict.get("memory") if result_dict else None,
         "pasted": pasted,
         "ignored_reason": ignored_reason,
     }
@@ -124,4 +126,12 @@ def _result_dict(result: PipelineResult | None) -> dict[str, Any] | None:
         "language": result.language,
         "duration": result.duration,
         "transcribe_time": result.transcribe_time,
+        "memory": {
+            "correction_ids": result.correction_memory_ids or [],
+            "correction_count": result.correction_memory_count,
+            "correction_error": result.correction_memory_error,
+            "whisper_hotwords": result.whisper_hotwords or [],
+            "whisper_hotword_count_before": result.whisper_hotword_count_before,
+            "whisper_hotword_count_after": result.whisper_hotword_count_after,
+        },
     }

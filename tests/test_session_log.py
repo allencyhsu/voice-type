@@ -107,3 +107,35 @@ def test_build_listen_session_record_keeps_audio_and_result_details():
     assert record["asr"]["status"] == "inserted"
     assert record["asr"]["language"] == "zh"
     assert record["pasted"] is True
+
+
+def test_build_listen_session_record_includes_memory_metadata():
+    record = build_listen_session_record(
+        started_at="2026-05-19T10:00:00+08:00",
+        completed_at="2026-05-19T10:00:03+08:00",
+        audio_path=Path("C:/Temp/voicetype-test.wav"),
+        audio_seconds=3.0,
+        audio_bytes=1234,
+        normalization=None,
+        result=PipelineResult(
+            status="inserted",
+            raw_text="cue and",
+            final_text="Qwen",
+            correction_memory_ids=["entry-1"],
+            correction_memory_count=1,
+            whisper_hotwords=["Qwen"],
+            whisper_hotword_count_before=3,
+            whisper_hotword_count_after=1,
+        ),
+        pasted=True,
+        app_name="notepad",
+    )
+
+    assert record["memory"] == {
+        "correction_ids": ["entry-1"],
+        "correction_count": 1,
+        "correction_error": None,
+        "whisper_hotwords": ["Qwen"],
+        "whisper_hotword_count_before": 3,
+        "whisper_hotword_count_after": 1,
+    }
