@@ -144,6 +144,10 @@ python -m voicetype listen --hotword Qwen --hotword Allen
 
 Faster Whisper receives at most five hotwords, and each hotword must be five Unicode characters or fewer. Longer terms and phrase corrections should go into correction memory so Qwen can apply them after ASR.
 
+VoiceType treats Faster Whisper `hotwords` as a small prompt hint, not as an unlimited dictionary. Faster Whisper encodes hotwords into the Whisper decoder prompt, so long lists compete with `initial_prompt`, prior text context, and generated output space.
+
+For development, keep `initial_prompt` plus `hotwords` bounded and prefer a deduped priority shortlist for the current dictation context. Target roughly 150-200 Whisper tokens, or use the conservative client fallback when the Whisper tokenizer is not available.
+
 Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
 
 In listener mode, VoiceType also detects the currently focused Windows app and passes the app name to Qwen so the polish step can account for the target writing context.

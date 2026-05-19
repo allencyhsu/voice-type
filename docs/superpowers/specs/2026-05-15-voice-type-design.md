@@ -145,6 +145,15 @@ Expected response shape:
 
 If `success` is false, VoiceType must treat transcription as failed and must not paste empty text.
 
+Hotwords and prompt limits:
+
+- Faster Whisper `hotwords` is not a separate unlimited vocabulary or a hard decoder bias. It is encoded into the Whisper decoder prompt, alongside `initial_prompt` and prior-text context.
+- Whisper/Faster Whisper prompt budget is token-based, not character-based. The practical hotword prompt ceiling is about half of the Whisper text context, roughly 223 Whisper tokens, before truncation or decoding failures become likely.
+- VoiceType must treat `initial_prompt` plus `hotwords` as a small hint budget. Do not send a full user dictionary, contact list, project glossary, or other unbounded vocabulary list in this field.
+- Prefer a dynamic shortlist of the most relevant terms for the current dictation context. Deduplicate, prioritize, and trim terms before sending the request.
+- Keep the combined `initial_prompt` and `hotwords` comfortably below the ceiling, targeting 150-200 Whisper tokens unless measured server behavior proves a tighter or looser budget is safe.
+- If token counting is not available in the client, use a conservative character fallback and log the pre-trim and post-trim hotword counts for debugging.
+
 ## Qwen llama-server Contract
 
 Base URL:
@@ -203,6 +212,7 @@ The Qwen prompt must enforce these rules:
 - Remove filler words, repeated starts, and explicit self-corrections.
 - Preserve mixed Chinese and English.
 - Preserve technical terms and configured hotwords.
+- Do not assume the ASR hotword list is exhaustive; it is intentionally capped because Faster Whisper uses it as prompt context.
 - Match the target application tone when app context is available.
 - Return only JSON with `action` and `text`.
 

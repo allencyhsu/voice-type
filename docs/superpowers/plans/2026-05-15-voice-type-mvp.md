@@ -267,6 +267,17 @@ def test_transcribe_posts_audio_and_parses_segments(tmp_path):
     assert b"Qwen" in request.body
 ```
 
+- [ ] **Step 1a: Add hotword budget coverage**
+
+Add focused tests that prove the client does not submit unbounded hotword text:
+
+- duplicate hotwords are removed while preserving first-seen priority order
+- empty and whitespace-only hotwords are ignored
+- very long hotword lists are trimmed before the multipart request is sent
+- the combined `initial_prompt` and `hotwords` budget is treated as token-oriented prompt space, not as an unlimited dictionary
+
+The test can use a conservative helper-level budget without depending on a live Faster Whisper server. If the Whisper tokenizer is available locally, count actual Whisper tokens; otherwise use a documented character fallback and keep the implementation easy to replace with true token counting later.
+
 - [ ] **Step 2: Run test to verify it fails**
 
 Run:
@@ -329,9 +340,13 @@ class WhisperClient:
         hotwords: list[str] | None = None,
     ) -> TranscriptionResult:
         path = Path(file_path)
+        hotwords_text = build_hotwords_prompt(
+            hotwords or [],
+            initial_prompt=initial_prompt,
+        )
         data = {
             "initial_prompt": initial_prompt,
-            "hotwords": ", ".join(hotwords or []),
+            "hotwords": hotwords_text,
             "temperature": 0.0,
             "beam_size": 5,
             "best_of": 5,
@@ -378,6 +393,49 @@ class WhisperClient:
         )
 ```
 
+Add the hotword helper in the same module for the MVP:
+
+```python
+MAX_PROMPT_HINT_CHARS = 700
+
+
+def build_hotwords_prompt(
+    hotwords: list[str],
+    *,
+    initial_prompt: str = "",
+    max_hint_chars: int = MAX_PROMPT_HINT_CHARS,
+) -> str:
+    """Return a bounded Faster Whisper hotword hint string.
+
+    Faster Whisper encodes hotwords into the Whisper decoder prompt. This is a
+    small token budget, not an unlimited vocabulary list.
+    """
+
+    budget = max(0, max_hint_chars - len(initial_prompt))
+    seen: set[str] = set()
+    selected: list[str] = []
+    current_len = 0
+
+    for raw_hotword in hotwords:
+        hotword = " ".join(raw_hotword.strip().split())
+        key = hotword.casefold()
+        if not hotword or key in seen:
+            continue
+
+        separator_len = 2 if selected else 0
+        next_len = current_len + separator_len + len(hotword)
+        if next_len > budget:
+            break
+
+        seen.add(key)
+        selected.append(hotword)
+        current_len = next_len
+
+    return ", ".join(selected)
+```
+
+This fallback deliberately budgets by characters because the MVP may not have the Whisper tokenizer installed on the Windows client. If token counting is added later, keep the same public behavior but replace the budget calculation with actual Whisper token counts. Continue to target 150-200 Whisper tokens for `initial_prompt` plus `hotwords`; do not approach the Faster Whisper truncation ceiling during normal dictation.
+
 - [ ] **Step 4: Run Whisper tests**
 
 Run:
@@ -386,7 +444,7 @@ Run:
 python -m pytest tests/test_whisper_client.py -v
 ```
 
-Expected: 2 passed.
+Expected: all Whisper client tests pass, including the hotword budget tests.
 
 - [ ] **Step 5: Commit Whisper client**
 
