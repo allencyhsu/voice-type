@@ -51,3 +51,27 @@ def test_transcribe_posts_audio_and_parses_segments(tmp_path):
     assert request.url == "http://example.test/transcribe"
     assert b'name="hotwords"' in request.body
     assert b"Qwen" in request.body
+
+
+@responses.activate
+def test_transcribe_sends_filtered_hotwords(tmp_path):
+    wav_path = tmp_path / "sample.wav"
+    wav_path.write_bytes(b"fake wav")
+    responses.post(
+        "http://example.test/transcribe",
+        json={"success": True, "segments": [{"start": 0, "end": 1, "text": "ok"}]},
+        status=200,
+    )
+
+    client = WhisperClient("http://example.test", timeout_sec=5)
+    client.transcribe(
+        wav_path,
+        hotwords=["Qwen", "Typeless", "重新開機", "Faster Whisper", "Allen", "語音"],
+    )
+
+    request_body = responses.calls[0].request.body
+    assert b"Qwen" in request_body
+    assert "重新開機".encode("utf-8") in request_body
+    assert b"Allen" in request_body
+    assert b"Typeless" not in request_body
+    assert b"Faster Whisper" not in request_body

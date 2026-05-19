@@ -7,6 +7,7 @@ from voicetype.memory import (
     CorrectionType,
     default_memory_path,
     select_relevant_corrections,
+    select_whisper_hotwords,
 )
 
 
@@ -86,3 +87,55 @@ def test_select_relevant_corrections_prefers_wrong_phrase_matches():
     selected = select_relevant_corrections("請 cue and 幫我重新開幾", entries)
 
     assert [entry.id for entry in selected] == ["phrase-1", "term-1"]
+
+
+def test_select_whisper_hotwords_enforces_five_by_five_limit():
+    hotwords = [
+        " Qwen ",
+        "Typeless",
+        "重新開機",
+        "Faster Whisper",
+        "Allen",
+        "Qwen",
+        "語音",
+        "",
+    ]
+
+    assert select_whisper_hotwords(hotwords) == ["Qwen", "重新開機", "Allen", "語音"]
+
+
+def test_select_whisper_hotwords_can_include_short_term_memory_only():
+    entries = [
+        CorrectionEntry(
+            id="short",
+            type=CorrectionType.TERM,
+            wrong="cue and",
+            correct="Qwen",
+            scope="global",
+            created_at="2026-05-19T10:00:00+08:00",
+            updated_at="2026-05-19T10:00:00+08:00",
+            uses=0,
+        ),
+        CorrectionEntry(
+            id="phrase",
+            type=CorrectionType.PHRASE,
+            wrong="重新開幾",
+            correct="重新開機",
+            scope="global",
+            created_at="2026-05-19T10:00:00+08:00",
+            updated_at="2026-05-19T10:00:00+08:00",
+            uses=0,
+        ),
+        CorrectionEntry(
+            id="long",
+            type=CorrectionType.TERM,
+            wrong="faster whisper",
+            correct="Faster Whisper",
+            scope="global",
+            created_at="2026-05-19T10:00:00+08:00",
+            updated_at="2026-05-19T10:00:00+08:00",
+            uses=0,
+        ),
+    ]
+
+    assert select_whisper_hotwords(["Allen"], memory_entries=entries) == ["Allen", "Qwen"]

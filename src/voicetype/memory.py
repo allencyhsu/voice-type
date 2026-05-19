@@ -10,6 +10,10 @@ from typing import Any, Callable
 from uuid import uuid4
 
 
+MAX_WHISPER_HOTWORDS = 5
+MAX_WHISPER_HOTWORD_CHARS = 5
+
+
 class CorrectionType(StrEnum):
     TERM = "term"
     PHRASE = "phrase"
@@ -153,3 +157,36 @@ def select_relevant_corrections(
 
     scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return [entry for _, _, entry in scored[:limit]]
+
+
+def select_whisper_hotwords(
+    cli_hotwords: list[str],
+    *,
+    memory_entries: list[CorrectionEntry] | None = None,
+    max_count: int = MAX_WHISPER_HOTWORDS,
+    max_chars: int = MAX_WHISPER_HOTWORD_CHARS,
+) -> list[str]:
+    selected: list[str] = []
+    seen: set[str] = set()
+
+    def add_candidate(value: str) -> None:
+        hotword = normalize_text(value)
+        key = hotword.casefold()
+        if not hotword or key in seen:
+            return
+        if len(hotword) > max_chars:
+            return
+        if len(selected) >= max_count:
+            return
+        seen.add(key)
+        selected.append(hotword)
+
+    for hotword in cli_hotwords:
+        add_candidate(hotword)
+
+    for entry in memory_entries or []:
+        if entry.type != CorrectionType.TERM:
+            continue
+        add_candidate(entry.correct)
+
+    return selected

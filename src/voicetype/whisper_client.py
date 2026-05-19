@@ -4,6 +4,8 @@ from typing import Any
 
 import requests
 
+from voicetype.memory import select_whisper_hotwords
+
 
 @dataclass(frozen=True)
 class TranscriptionSegment:
@@ -45,9 +47,10 @@ class WhisperClient:
         hotwords: list[str] | None = None,
     ) -> TranscriptionResult:
         path = Path(file_path)
+        selected_hotwords = select_whisper_hotwords(hotwords or [])
         data = {
             "initial_prompt": initial_prompt,
-            "hotwords": ", ".join(hotwords or []),
+            "hotwords": ", ".join(selected_hotwords),
             "temperature": 0.0,
             "beam_size": 5,
             "best_of": 5,
