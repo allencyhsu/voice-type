@@ -4,6 +4,8 @@ from typing import Any
 
 import requests
 
+from voicetype.memory import CorrectionEntry
+
 
 SYSTEM_PROMPT = """You are a local dictation cleanup engine. Return only JSON.
 Rules:
@@ -14,6 +16,10 @@ Rules:
 - Preserve the Chinese script used in the transcript. If the transcript uses Traditional Chinese, keep Traditional Chinese and do not convert it to Simplified Chinese.
 - If the transcript uses Simplified Chinese, keep Simplified Chinese and do not convert it to Traditional Chinese.
 - Preserve technical terms and configured hotwords.
+- Use correction_memory only when it matches the transcript.
+- Prefer exact correction_memory over guessing.
+- Do not invent new terms.
+- Do not assume the ASR hotword list is exhaustive.
 - Match the target application tone when app context is available.
 - Return only JSON with action and text."""
 
@@ -57,6 +63,7 @@ class QwenClient:
         *,
         app_name: str | None = None,
         hotwords: list[str] | None = None,
+        correction_memory: list[CorrectionEntry] | None = None,
     ) -> str:
         if not raw_text.strip():
             return raw_text
@@ -66,6 +73,9 @@ class QwenClient:
             "mode": "dictation",
             "raw_transcript": raw_text,
             "hotwords": hotwords or [],
+            "correction_memory": [
+                entry.to_prompt_dict() for entry in correction_memory or []
+            ],
             "chinese_script": detect_chinese_script(raw_text),
         }
         request_body = {

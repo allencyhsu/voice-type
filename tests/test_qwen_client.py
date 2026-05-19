@@ -2,6 +2,7 @@ import json
 
 import responses
 
+from voicetype.memory import CorrectionEntry, CorrectionType
 from voicetype.qwen_client import QwenClient
 
 
@@ -111,3 +112,33 @@ def test_polish_fails_open_to_raw_text_on_server_error():
     client = QwenClient("http://example.test/v1", "qwen3.6-35b", timeout_sec=5)
 
     assert client.polish("raw text", app_name="Notepad") == "raw text"
+
+
+@responses.activate
+def test_polish_sends_correction_memory_in_user_payload():
+    responses.post(
+        "http://example.test/v1/chat/completions",
+        json={"choices": [{"message": {"content": '{"action":"insert","text":"Qwen is ready."}'}}]},
+        status=200,
+    )
+    memory = [
+        CorrectionEntry(
+            id="entry-1",
+            type=CorrectionType.TERM,
+            wrong="cue and",
+            correct="Qwen",
+            scope="global",
+            created_at="2026-05-19T10:00:00+08:00",
+            updated_at="2026-05-19T10:00:00+08:00",
+            uses=0,
+        )
+    ]
+    client = QwenClient("http://example.test/v1", "qwen3.6-35b", timeout_sec=5)
+
+    client.polish("cue and is ready", app_name="Notepad", correction_memory=memory)
+
+    payload = json.loads(responses.calls[0].request.body)
+    user_payload = json.loads(payload["messages"][1]["content"])
+    assert user_payload["correction_memory"] == [
+        {"id": "entry-1", "type": "term", "wrong": "cue and", "correct": "Qwen"}
+    ]
