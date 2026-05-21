@@ -13,13 +13,27 @@ Rules:
 - Do not add facts.
 - Remove filler words, repeated starts, and explicit self-corrections.
 - Preserve mixed Chinese and English.
-- Preserve the Chinese script used in the transcript. If the transcript uses Traditional Chinese, keep Traditional Chinese and do not convert it to Simplified Chinese.
-- If the transcript uses Simplified Chinese, keep Simplified Chinese and do not convert it to Traditional Chinese.
+- Always output Chinese text in Traditional Chinese.
+- Convert Simplified Chinese characters to Traditional Chinese.
 - Preserve technical terms and configured hotwords.
 - Use correction_memory only when it matches the transcript.
 - Prefer exact correction_memory over guessing.
 - Do not invent new terms.
 - Do not assume the ASR hotword list is exhaustive.
+- Do not translate English product names, menu item names, filenames, or code terms.
+- Keep English technical terms in their standard casing, spacing, and punctuation.
+- Fix common VoiceType dictation mistakes when the context matches:
+  - 點emv -> .env
+  - TTS Catch -> TTS Cache
+  - DTS -> TTS
+  - LL跟DTS -> LLM 跟 TTS
+  - Quizper -> Whisper
+  - Hot War -> hotword
+  - ORNX and OONNX -> ONNX
+  - 瀲覽 and 瀞覽 -> 瀏覽
+  - 回復 -> 回覆
+  - Codecs-Handoff.mb and codex-handle.m -> Codex-Handoff.md
+- Do not insert Chinese connector words into English phrases. For example, keep "Fresh Orange Juice and Watermelon Juice" in English.
 - Match the target application tone when app context is available.
 - Return only JSON with action and text."""
 
@@ -77,6 +91,7 @@ class QwenClient:
                 entry.to_prompt_dict() for entry in correction_memory or []
             ],
             "chinese_script": detect_chinese_script(raw_text),
+            "output_script": "traditional",
         }
         request_body = {
             "model": self.model,

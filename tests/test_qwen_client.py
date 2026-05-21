@@ -78,7 +78,7 @@ def test_polish_sends_hotwords_in_user_payload():
 
 
 @responses.activate
-def test_polish_preserves_traditional_chinese_script_in_prompt_and_payload():
+def test_polish_forces_traditional_chinese_in_prompt_and_payload():
     responses.post(
         "http://example.test/v1/chat/completions",
         json={
@@ -101,9 +101,40 @@ def test_polish_preserves_traditional_chinese_script_in_prompt_and_payload():
     system_prompt = payload["messages"][0]["content"]
     user_payload = json.loads(payload["messages"][1]["content"])
 
-    assert "If the transcript uses Traditional Chinese, keep Traditional Chinese" in system_prompt
-    assert "do not convert it to Simplified Chinese" in system_prompt
+    assert "Always output Chinese text in Traditional Chinese" in system_prompt
+    assert "Convert Simplified Chinese characters to Traditional Chinese" in system_prompt
     assert user_payload["chinese_script"] == "traditional"
+    assert user_payload["output_script"] == "traditional"
+
+
+@responses.activate
+def test_polish_prompt_includes_common_voicetype_correction_rules():
+    responses.post(
+        "http://example.test/v1/chat/completions",
+        json={
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"action":"insert","text":"檢查 TTS Cache 與 .env。"}'
+                    }
+                }
+            ]
+        },
+        status=200,
+    )
+
+    client = QwenClient("http://example.test/v1", "qwen3.6-35b", timeout_sec=5)
+
+    client.polish("確認一下記錄,有使用到TTS Catch嗎?", app_name="Code")
+
+    payload = json.loads(responses.calls[0].request.body)
+    system_prompt = payload["messages"][0]["content"]
+
+    assert "TTS Catch -> TTS Cache" in system_prompt
+    assert "點emv -> .env" in system_prompt
+    assert "Quizper -> Whisper" in system_prompt
+    assert "Hot War -> hotword" in system_prompt
+    assert "Do not translate English product names, menu item names, filenames, or code terms" in system_prompt
 
 
 @responses.activate
