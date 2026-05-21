@@ -59,7 +59,7 @@ Start VoiceType in the Windows system tray:
 python -m voicetype tray
 ```
 
-Tray mode keeps the existing right Ctrl listener and overlay behavior. The microphone is still opened only while actively recording.
+Tray mode keeps the existing right Ctrl listener and overlay behavior. The microphone is still opened only while actively recording, and Windows output audio is temporarily muted during that active recording window.
 
 For no-console startup, create a shortcut or startup entry that runs:
 
@@ -75,9 +75,10 @@ Manual test flow:
 2. Put the caret in the input field.
 3. Leave the VoiceType terminal running in the background or on another monitor.
 4. Press the right Ctrl key once to start listening.
-5. Speak.
-6. Press the right Ctrl key again to stop listening.
-7. VoiceType transcribes, optionally polishes with Qwen, and pastes through the clipboard into the focused input.
+5. Windows output audio is muted while VoiceType records.
+6. Speak.
+7. Press the right Ctrl key again to stop listening.
+8. VoiceType transcribes, optionally polishes with Qwen, and pastes through the clipboard into the focused input.
 
 Short accidental taps are ignored by default. A recording must be at least 0.7 seconds before VoiceType sends it to Whisper. Override this threshold with:
 
@@ -91,7 +92,7 @@ Status notifications default to a vivid top-most overlay above the Windows taskb
 python -m voicetype listen
 ```
 
-When you press right Ctrl to start recording, the overlay stays visible as a listening reminder until you press right Ctrl again. After you stop recording, it switches to the processing status and then hides automatically.
+When you press right Ctrl to start recording, the overlay stays visible as a listening reminder until you press right Ctrl again. VoiceType restores the previous Windows output mute state as soon as recording stops; if output was already muted before dictation, it remains muted afterward. After you stop recording, it switches to the processing status and then hides automatically.
 
 Use terminal-only status messages with:
 

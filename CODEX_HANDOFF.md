@@ -33,6 +33,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
   - second press stops recording, normalizes audio, transcribes, optionally polishes, and pastes through the clipboard
 - Microphone is opened only during active recording. It is not kept open while idle.
 - If VoiceType exits while recording, the active audio stream is cancelled and closed instead of being left open.
+- Windows default output audio is muted only during active recording and restored to its previous mute state before transcription, Qwen polish, or paste work begins.
 - Default status UI is a top-most Tk overlay above the Windows taskbar.
 - Overlay behavior:
   - `Listening...` remains visible until the next Right Ctrl press
@@ -174,6 +175,11 @@ OK
 
 ## Recent Commits
 
+- `dbe597c docs: document output mute during recording`
+- `cb74368 feat: mute output during active recording`
+- `a76b363 test: cover recording output mute restore`
+- `011b14b feat: add Windows output audio mute guard`
+- `5ee74e8 docs: plan output mute during recording`
 - `597ff28 feat: add correction memory CLI`
 - `f5ac281 feat: use correction memory in pipeline`
 - `c05785a feat: send correction memory to Qwen`
@@ -210,6 +216,7 @@ OK
 - Primary interaction should feel like Typeless: hotkey-driven, low-friction, and visible while listening.
 - Right Ctrl is the current toggle key.
 - The user does not want the microphone kept open while VoiceType is idle.
+- Output audio should be muted during active recording to reduce playback bleed into the microphone, then restored to the user's previous mute state.
 - About 0.2 seconds of microphone cold-start latency is acceptable.
 - Toast notifications are less intuitive for this workflow; overlay is preferred.
 - Overlay should be visually obvious, not plain black/white, and should sit above the Windows taskbar rather than at the top of the screen.
@@ -227,6 +234,7 @@ OK
 
 - `src/voicetype/cli.py` - command parsing, listener loop, session logging hookup
 - `src/voicetype/audio.py` - recording, normalization, temp WAV cleanup
+- `src/voicetype/output_audio.py` - Windows output mute guard and safe restore helpers
 - `src/voicetype/active_window.py` - focused Windows app/window detection
 - `src/voicetype/listener_runtime.py` - background runtime wrapper for listener mode
 - `src/voicetype/startup.py` - Windows Startup folder entry management
@@ -258,6 +266,7 @@ OK
 - Do not replace the current Qwen endpoint with `forge2`; the corrected host is `ai-srv.tail9d0481.ts.net`.
 - Do not send full correction memory, contact lists, project glossaries, or long terms to Faster Whisper.
 - Do not change the idle microphone behavior without explicit approval.
+- Do not mute output outside active recording, and do not overwrite a user's preexisting muted state.
 - Do not make overlay diagnostic-heavy; keep diagnostics in terminal and logs.
 - Avoid long-term WAV retention until the user explicitly asks for it, because the files can contain private speech.
 - Do not replace the Startup folder approach with installer behavior until tray mode is stable.
