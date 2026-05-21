@@ -1,3 +1,4 @@
+import voicetype.tray as tray
 from voicetype.listener_runtime import ListenerStatus
 from voicetype.tray import TrayController
 
@@ -46,6 +47,17 @@ def test_tray_controller_can_show_latest_log():
     controller.show_latest_log()
 
     assert messages == [("VoiceType Latest Log", "latest log line")]
+
+
+def test_show_message_uses_native_windows_message_box(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(tray.os, "name", "nt")
+    monkeypatch.setattr(tray, "show_windows_message", lambda title, message: calls.append((title, message)))
+
+    tray.show_message("VoiceType Latest Log", "latest log line")
+
+    assert calls == [("VoiceType Latest Log", "latest log line")]
 
 
 def test_tray_controller_stop_stops_runtime_and_icon():

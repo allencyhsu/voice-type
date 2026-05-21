@@ -59,6 +59,23 @@ def latest_log_text() -> str:
 
 
 def show_message(title: str, message: str) -> None:
+    if os.name == "nt":
+        show_windows_message(title, message)
+        return
+
+    show_tk_message(title, message)
+
+
+def show_windows_message(title: str, message: str) -> None:
+    import ctypes
+
+    mb_ok = 0x00000000
+    mb_icon_information = 0x00000040
+    mb_topmost = 0x00040000
+    ctypes.windll.user32.MessageBoxW(None, message, title, mb_ok | mb_icon_information | mb_topmost)
+
+
+def show_tk_message(title: str, message: str) -> None:
     import tkinter as tk
     from tkinter import messagebox
 
