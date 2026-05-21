@@ -3,13 +3,13 @@
 ## Current State
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
-- Working branch: `feature/env-example-settings`
-- Latest implementation/test commit covered by this handoff: `efd0844 test: verify env example defaults`
-- Env-example branch docs are covered through `35e1ad4 docs: refresh env example handoff state`; check `git log --oneline` for the exact latest docs refresh after this fix commit.
+- Working branch: `main`
+- Latest implementation/test commit covered by this handoff: `5008c26 fix: use native dialog for tray latest log`
+- Env-example docs are covered through the merged env-example commits; check `git log --oneline` for the exact latest docs refresh after this fix commit.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType branch state, including the env-example settings workflow and earlier output-mute work. Env-example branch docs are committed through `35e1ad4 docs: refresh env example handoff state`; the latest implementation/test commit before the final review fix is `efd0844 test: verify env example defaults`.
+This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, output-mute work, and the native Windows latest-log dialog fix.
 
 ## Service Endpoints
 
@@ -27,7 +27,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - `.env-example` is a tracked settings template; copy it to ignored `.env` for local endpoint, timeout, recording, and LLM settings.
 - Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
 - Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
-- Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory.
+- Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory. On Windows it uses the native MessageBox API instead of Tk messagebox so the dialog can be closed reliably from tray callbacks.
 - Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
 - Tray Quit stops the background listener/hotkey path before closing the icon.
 - Right Ctrl toggles listener mode:
