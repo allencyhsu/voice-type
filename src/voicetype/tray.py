@@ -1,6 +1,7 @@
 import os
 from collections.abc import Callable
 from datetime import date
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
@@ -19,7 +20,7 @@ class TrayController:
     ) -> None:
         self.runtime = runtime
         self.latest_log_provider = latest_log_provider or latest_log_text
-        self.message_presenter = message_presenter or show_message
+        self.message_presenter = message_presenter or show_latest_log_file
 
     def start(self) -> None:
         self.runtime.start_in_thread()
@@ -56,6 +57,22 @@ def latest_log_text() -> str:
     if record is None:
         return "[VoiceType] No session log found for today."
     return format_log_record(record)
+
+
+def show_latest_log_file(
+    title: str,
+    message: str,
+    *,
+    base_dir: str | Path | None = None,
+    opener: Callable[[Path], object] | None = None,
+) -> Path:
+    output_dir = Path(base_dir) if base_dir is not None else default_log_dir().parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "latest-log.txt"
+    output_path.write_text(f"{title}\n\n{message}\n", encoding="utf-8")
+    open_file = opener or os.startfile
+    open_file(output_path)
+    return output_path
 
 
 def show_message(title: str, message: str) -> None:

@@ -49,6 +49,35 @@ def test_tray_controller_can_show_latest_log():
     assert messages == [("VoiceType Latest Log", "latest log line")]
 
 
+def test_default_show_latest_log_writes_file_and_opens_it(tmp_path):
+    opened = []
+
+    path = tray.show_latest_log_file(
+        "VoiceType Latest Log",
+        "latest log line",
+        base_dir=tmp_path,
+        opener=lambda path: opened.append(path),
+    )
+
+    assert path == tmp_path / "latest-log.txt"
+    assert path.read_text(encoding="utf-8") == "VoiceType Latest Log\n\nlatest log line\n"
+    assert opened == [path]
+
+
+def test_tray_controller_defaults_to_latest_log_file_presenter(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(tray, "show_latest_log_file", lambda title, message: calls.append((title, message)))
+    controller = TrayController(
+        runtime=FakeRuntime(),
+        latest_log_provider=lambda: "latest log line",
+    )
+
+    controller.show_latest_log()
+
+    assert calls == [("VoiceType Latest Log", "latest log line")]
+
+
 def test_show_message_uses_native_windows_message_box(monkeypatch):
     calls = []
 
