@@ -4,11 +4,12 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/env-example-settings`
-- Latest implementation commit covered by this handoff: `ffd1f34 fix: support current pycaw speaker endpoint`
+- Latest implementation/test commit covered by this handoff: `efd0844 test: verify env example defaults`
+- Latest branch commit covered by this handoff: `23d884b docs: document env settings workflow`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the output-mute implementation state; use git log for the exact latest documentation-refresh commit. The latest implementation change is `ffd1f34 fix: support current pycaw speaker endpoint`.
+This handoff tracks the current VoiceType branch state, including the env-example settings workflow and earlier output-mute work. Env-example changes are committed through `23d884b docs: document env settings workflow`; the latest implementation/test commit is `efd0844 test: verify env example defaults`.
 
 ## Service Endpoints
 
@@ -164,8 +165,14 @@ OK, pycaw resolved AudioUtilities.GetSpeakers().EndpointVolume
 OK, mute state changed initial 0 -> during 1 -> restored 0
 ```
 
-## Recent Output-Mute Commits Before This Handoff Refresh
+## Recent Commits
 
+- `23d884b docs: document env settings workflow`
+- `efd0844 test: verify env example defaults`
+- `5393762 feat: add env example template`
+- `60874ae docs: plan env example settings`
+- `afcf89e docs: design env example settings`
+- `64d052a docs: refresh handoff after pycaw endpoint fix`
 - `ffd1f34 fix: support current pycaw speaker endpoint`
 - `153de28 docs: refresh output mute verification`
 - `c07ad93 docs: make output mute handoff state durable`
