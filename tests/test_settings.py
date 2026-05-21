@@ -2,15 +2,18 @@ from voicetype.settings import Settings
 
 
 def test_default_settings_match_voice_type_services():
-    settings = Settings()
+    defaults = {
+        field_name: field.default
+        for field_name, field in Settings.model_fields.items()
+    }
 
-    assert settings.whisper_url == "http://forge2.tail9d0481.ts.net:8008"
-    assert settings.llm_base_url == "http://ai-srv.tail9d0481.ts.net:8001/v1"
-    assert settings.llm_model == "qwen3.6-35b"
-    assert settings.enable_llm is True
-    assert settings.sample_rate == 16000
-    assert settings.channels == 1
-    assert settings.min_record_seconds == 0.7
+    assert defaults["whisper_url"] == "http://forge2.tail9d0481.ts.net:8008"
+    assert defaults["llm_base_url"] == "http://ai-srv.tail9d0481.ts.net:8001/v1"
+    assert defaults["llm_model"] == "qwen3.6-35b"
+    assert defaults["enable_llm"] is True
+    assert defaults["sample_rate"] == 16000
+    assert defaults["channels"] == 1
+    assert defaults["min_record_seconds"] == 0.7
 
 
 def test_settings_read_environment_overrides(monkeypatch):
@@ -67,8 +70,8 @@ def test_env_example_keys_match_settings_fields():
     assert keys == expected_keys
     assert service_keys <= expected_keys
 
-    settings = Settings()
     prefix = "VOICETYPE_"
     for key, env_value in env_values.items():
         field_name = key.removeprefix(prefix).lower()
-        assert env_value == _settings_default_value(getattr(settings, field_name))
+        default_value = Settings.model_fields[field_name].default
+        assert env_value == _settings_default_value(default_value)
