@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
-- Working branch: `feature/voice-type-mvp`
-- Latest implementation commit covered by this handoff: `597ff28 feat: add correction memory CLI`
-- Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\voice-type-mvp`
+- Working branch: `feature/output-mute-during-recording`
+- Latest implementation commit covered by this handoff: `5ee74e8 fix: restore output when recording stop fails`
+- Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\output-mute-during-recording`
 - Python environment: local `.venv`
 
-The worktree was clean after the implementation commit. This handoff file was updated afterward to capture that state.
+The current output-mute series is committed through documentation commit `5f8f5bb docs: document recording output mute`. The latest implementation change is `5ee74e8 fix: restore output when recording stop fails`; this handoff refresh is documentation-only and should be committed separately.
 
 ## Service Endpoints
 
@@ -175,11 +175,12 @@ OK
 
 ## Recent Commits
 
-- `dbe597c docs: document output mute during recording`
-- `cb74368 feat: mute output during active recording`
-- `a76b363 test: cover recording output mute restore`
-- `011b14b feat: add Windows output audio mute guard`
-- `5ee74e8 docs: plan output mute during recording`
+- `5f8f5bb docs: document recording output mute`
+- `5ee74e8 fix: restore output when recording stop fails`
+- `011b14b feat: mute output during recording`
+- `a76b363 feat: add output mute guard`
+- `cb74368 docs: plan output mute during recording`
+- `dbe597c docs: design output mute during recording`
 - `597ff28 feat: add correction memory CLI`
 - `f5ac281 feat: use correction memory in pipeline`
 - `c05785a feat: send correction memory to Qwen`
