@@ -8,7 +8,7 @@
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\output-mute-during-recording`
 - Python environment: local `.venv`
 
-The output-mute implementation and handoff refresh are committed through `4f8423e docs: refresh output mute handoff state`. The latest implementation change is `5ee74e8 fix: restore output when recording stop fails`.
+This handoff tracks the output-mute implementation state; use git log for the exact latest documentation-refresh commit. The latest implementation change is `5ee74e8 fix: restore output when recording stop fails`.
 
 ## Service Endpoints
 
@@ -173,8 +173,9 @@ python -m voicetype memory add --help
 OK
 ```
 
-## Recent Commits
+## Recent Output-Mute Commits Before This Handoff Refresh
 
+- `cf7108d docs: align output mute handoff commit state`
 - `4f8423e docs: refresh output mute handoff state`
 - `5f8f5bb docs: document recording output mute`
 - `5ee74e8 fix: restore output when recording stop fails`
