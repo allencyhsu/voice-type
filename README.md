@@ -15,6 +15,7 @@ Windows voice typing prototype using a remote Faster Whisper transcription serve
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
+Copy-Item .env-example .env
 ```
 
 If `python` points to the Windows Store stub, use the Python launcher:
@@ -23,7 +24,10 @@ If `python` points to the Windows Store stub, use the Python launcher:
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
+Copy-Item .env-example .env
 ```
+
+Edit `.env` to change service endpoints, timeouts, recording defaults, or whether Qwen polish is enabled. `.env` is local and ignored by git; direct `VOICETYPE_*` environment variables still override `.env` values.
 
 ## Verify Services
 

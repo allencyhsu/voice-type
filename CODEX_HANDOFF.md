@@ -3,7 +3,7 @@
 ## Current State
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
-- Working branch: `main`
+- Working branch: `feature/env-example-settings`
 - Latest implementation commit covered by this handoff: `ffd1f34 fix: support current pycaw speaker endpoint`
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
@@ -23,6 +23,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 ## Implemented Capabilities
 
 - CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, `memory`, and `tray` commands.
+- `.env-example` is a tracked settings template; copy it to ignored `.env` for local endpoint, timeout, recording, and LLM settings.
 - Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
 - Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
 - Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory.
@@ -68,6 +69,7 @@ Set up:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
+Copy-Item .env-example .env
 ```
 
 Run listener:
@@ -240,6 +242,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 - `src/voicetype/memory.py` - local correction memory store, selector, and Whisper hotword filter
 - `src/voicetype/qwen_client.py` - llama-server chat completions client and fail-open JSON parsing
 - `src/voicetype/whisper_client.py` - Faster Whisper HTTP client
+- `.env-example` - tracked template for local `VOICETYPE_*` settings
 - `README.md` - user-facing setup and test instructions
 - `docs/superpowers/specs/2026-05-15-voice-type-design.md` - original design spec
 - `docs/superpowers/specs/2026-05-15-voice-type-tray-app-design.md` - Tray App v1 design
@@ -259,6 +262,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 ## Cautions
 
 - Do not replace the current Qwen endpoint with `forge2`; the corrected host is `ai-srv.tail9d0481.ts.net`.
+- Do not commit `.env`; keep local machine-specific settings in the ignored `.env` file.
 - Do not send full correction memory, contact lists, project glossaries, or long terms to Faster Whisper.
 - Do not change the idle microphone behavior without explicit approval.
 - Do not mute output outside active recording, and do not overwrite a user's preexisting muted state.
