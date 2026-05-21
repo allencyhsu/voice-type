@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
-- Working branch: `feature/output-mute-during-recording`
-- Latest implementation commit covered by this handoff: `5ee74e8 fix: restore output when recording stop fails`
-- Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType\.worktrees\output-mute-during-recording`
+- Working branch: `main`
+- Latest implementation commit covered by this handoff: `ffd1f34 fix: support current pycaw speaker endpoint`
+- Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the output-mute implementation state; use git log for the exact latest documentation-refresh commit. The latest implementation change is `5ee74e8 fix: restore output when recording stop fails`.
+This handoff tracks the output-mute implementation state; use git log for the exact latest documentation-refresh commit. The latest implementation change is `ffd1f34 fix: support current pycaw speaker endpoint`.
 
 ## Service Endpoints
 
@@ -140,7 +140,7 @@ Last known verification:
 OK, installed pycaw/comtypes runtime dependency in the worktree venv
 
 .\.venv\Scripts\python.exe -m pytest -q
-99 passed
+100 passed
 
 .\.venv\Scripts\python.exe -m compileall -q src tests
 OK
@@ -156,10 +156,16 @@ OK
 
 .\.venv\Scripts\python.exe -m voicetype tray --help
 OK
+
+real Windows output endpoint smoke
+OK, pycaw resolved AudioUtilities.GetSpeakers().EndpointVolume
+OK, mute state changed initial 0 -> during 1 -> restored 0
 ```
 
 ## Recent Output-Mute Commits Before This Handoff Refresh
 
+- `ffd1f34 fix: support current pycaw speaker endpoint`
+- `153de28 docs: refresh output mute verification`
 - `c07ad93 docs: make output mute handoff state durable`
 - `cf7108d docs: align output mute handoff commit state`
 - `4f8423e docs: refresh output mute handoff state`
