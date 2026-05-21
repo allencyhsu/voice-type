@@ -5,11 +5,11 @@
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `feature/env-example-settings`
 - Latest implementation/test commit covered by this handoff: `efd0844 test: verify env example defaults`
-- Latest branch commit covered by this handoff: `23d884b docs: document env settings workflow`
+- Env-example branch docs are covered through `35e1ad4 docs: refresh env example handoff state`; check `git log --oneline` for the exact latest docs refresh after this fix commit.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType branch state, including the env-example settings workflow and earlier output-mute work. Env-example changes are committed through `23d884b docs: document env settings workflow`; the latest implementation/test commit is `efd0844 test: verify env example defaults`.
+This handoff tracks the current VoiceType branch state, including the env-example settings workflow and earlier output-mute work. Env-example branch docs are committed through `35e1ad4 docs: refresh env example handoff state`; the latest implementation/test commit before the final review fix is `efd0844 test: verify env example defaults`.
 
 ## Service Endpoints
 
@@ -167,6 +167,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 
 ## Recent Commits
 
+- `35e1ad4 docs: refresh env example handoff state`
 - `23d884b docs: document env settings workflow`
 - `efd0844 test: verify env example defaults`
 - `5393762 feat: add env example template`

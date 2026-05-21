@@ -49,6 +49,9 @@ def test_env_example_keys_match_settings_fields():
     env_values = _env_example_values()
     keys = set(env_values)
     expected_keys = {
+        f"VOICETYPE_{field_name.upper()}" for field_name in Settings.model_fields
+    }
+    service_keys = {
         "VOICETYPE_WHISPER_URL",
         "VOICETYPE_LLM_BASE_URL",
         "VOICETYPE_LLM_MODEL",
@@ -61,21 +64,11 @@ def test_env_example_keys_match_settings_fields():
         "VOICETYPE_MIN_RECORD_SECONDS",
     }
 
-    assert expected_keys <= keys
-
-    prefix = "VOICETYPE_"
-    settings_fields = set(Settings.model_fields)
-    unknown_fields = {
-        key.removeprefix(prefix).lower()
-        for key in keys
-        if key.startswith(prefix)
-    } - settings_fields
-
-    assert unknown_fields == set()
+    assert keys == expected_keys
+    assert service_keys <= expected_keys
 
     settings = Settings()
+    prefix = "VOICETYPE_"
     for key, env_value in env_values.items():
-        if not key.startswith(prefix):
-            continue
         field_name = key.removeprefix(prefix).lower()
         assert env_value == _settings_default_value(getattr(settings, field_name))
