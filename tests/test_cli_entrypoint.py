@@ -1,13 +1,206 @@
+from pathlib import Path
+from types import SimpleNamespace
+
 import voicetype.__main__ as entrypoint
+import voicetype.cli as cli
 from voicetype.cli import (
     build_parser,
     describe_pipeline_result,
     describe_pipeline_status,
     format_log_summary,
+    record_wav_with_output_muted,
+    run_listen,
     select_recent_records,
     should_process_recording,
 )
 from voicetype.pipeline import PipelineResult
+
+
+class FakeOutputGuard:
+    def __init__(self, events):
+        self.events = events
+
+    def mute_for_recording(self):
+        self.events.append("guard.mute")
+
+    def restore(self):
+        self.events.append("guard.restore")
+
+
+class FakeNotifier:
+    def __init__(self, events):
+        self.events = events
+
+    def notify(self, message):
+        self.events.append(f"notify:{message}")
+
+
+class FakePipeline:
+    def __init__(self, events):
+        self.events = events
+
+    def process_file_result(self, audio_path, *, app_name=None, hotwords=None, paste=True):
+        self.events.append(f"pipeline.process:{Path(audio_path).name}:{app_name}:{paste}")
+        return PipelineResult(status="inserted", raw_text="raw", final_text="final")
+
+
+class FakeListener:
+    def __init__(self, toggle, events, *, interrupt=False):
+        self.toggle = toggle
+        self.events = events
+        self.interrupt = interrupt
+
+    def run(self):
+        self.events.append("listener.run")
+        self.toggle()
+        if self.interrupt:
+            raise KeyboardInterrupt
+        self.toggle()
+
+    def stop(self):
+        self.events.append("listener.stop")
+
+
+class FakeRecorder:
+    def __init__(self, events, wav_path, *, duration_seconds):
+        self.events = events
+        self.wav_path = wav_path
+        self.duration_seconds = duration_seconds
+        self.is_recording = False
+
+    def start(self):
+        self.events.append("recorder.start")
+        self.is_recording = True
+
+    def stop_to_wav(self):
+        self.events.append("recorder.stop")
+        self.is_recording = False
+        self.wav_path.write_bytes(b"fake wav")
+        return self.wav_path
+
+    def cancel(self):
+        self.events.append("recorder.cancel")
+        self.is_recording = False
+
+
+def _listen_args(**overrides):
+    values = {
+        "notify": "off",
+        "min_seconds": None,
+        "hotword": [],
+        "no_paste": False,
+        "status_callback": lambda status: None,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def _settings(**overrides):
+    values = {
+        "sample_rate": 16000,
+        "channels": 1,
+        "min_record_seconds": 0.7,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def _patch_listen_dependencies(monkeypatch, events, tmp_path, *, duration_seconds, interrupt=False):
+    guard = FakeOutputGuard(events)
+    recorder = FakeRecorder(events, tmp_path / "listen.wav", duration_seconds=duration_seconds)
+
+    monkeypatch.setattr(cli, "create_output_mute_guard", lambda: guard)
+    monkeypatch.setattr(cli, "ToggleRecorder", lambda *, sample_rate, channels: recorder)
+    monkeypatch.setattr(cli, "create_notifier", lambda notify: FakeNotifier(events))
+    monkeypatch.setattr(cli, "RightCtrlToggleListener", lambda toggle: FakeListener(toggle, events, interrupt=interrupt))
+    monkeypatch.setattr(cli, "get_active_app_name", lambda: events.append("active_app") or "Notepad")
+    monkeypatch.setattr(
+        cli,
+        "normalize_wav",
+        lambda audio_path: events.append("normalize")
+        or SimpleNamespace(applied=False, gain=1.0, peak_before=0.0, peak_after=0.0),
+    )
+    monkeypatch.setattr(cli, "append_session_record", lambda session_logger, record: events.append("session.log"))
+    monkeypatch.setattr(cli, "current_timestamp", lambda: events.append("timestamp") or "2026-05-21T00:00:00+08:00")
+
+    return recorder
+
+
+def test_run_listen_mutes_between_start_and_stop_then_restores_before_processing(monkeypatch, tmp_path):
+    events = []
+    _patch_listen_dependencies(monkeypatch, events, tmp_path, duration_seconds=1.25)
+
+    run_listen(_listen_args(), _settings(), FakePipeline(events))
+
+    assert events.index("recorder.start") < events.index("guard.mute") < events.index("recorder.stop")
+    assert events.index("recorder.stop") < events.index("guard.restore") < events.index("normalize")
+    assert events.index("normalize") < events.index("pipeline.process:listen.wav:Notepad:True")
+
+
+def test_run_listen_short_recording_restores_output_and_skips_pipeline(monkeypatch, tmp_path):
+    events = []
+    _patch_listen_dependencies(monkeypatch, events, tmp_path, duration_seconds=0.25)
+
+    run_listen(_listen_args(), _settings(), FakePipeline(events))
+
+    assert events.index("recorder.stop") < events.index("guard.restore") < events.index("active_app")
+    assert "guard.restore" in events
+    assert "session.log" in events
+    assert not any(event.startswith("pipeline.process") for event in events)
+
+
+def test_run_listen_keyboard_interrupt_while_recording_cancels_and_restores(monkeypatch, tmp_path):
+    events = []
+    _patch_listen_dependencies(monkeypatch, events, tmp_path, duration_seconds=1.25, interrupt=True)
+
+    run_listen(_listen_args(), _settings(), FakePipeline(events))
+
+    assert events.index("recorder.start") < events.index("guard.mute")
+    assert events.index("guard.mute") < events.index("recorder.cancel") < events.index("guard.restore")
+    assert not any(event.startswith("pipeline.process") for event in events)
+
+
+def test_record_wav_with_output_muted_mutes_records_and_restores(tmp_path):
+    events = []
+    wav_path = tmp_path / "recorded.wav"
+
+    def record_func(seconds, *, sample_rate, channels):
+        events.append(f"record:{seconds}:{sample_rate}:{channels}")
+        return wav_path
+
+    result = record_wav_with_output_muted(
+        1.25,
+        sample_rate=16000,
+        channels=1,
+        output_guard=FakeOutputGuard(events),
+        record_func=record_func,
+    )
+
+    assert result == wav_path
+    assert events == ["guard.mute", "record:1.25:16000:1", "guard.restore"]
+
+
+def test_record_wav_with_output_muted_restores_and_propagates_recording_errors():
+    events = []
+
+    def record_func(seconds, *, sample_rate, channels):
+        events.append("record.raises")
+        raise RuntimeError("microphone failed")
+
+    try:
+        record_wav_with_output_muted(
+            1.0,
+            sample_rate=16000,
+            channels=1,
+            output_guard=FakeOutputGuard(events),
+            record_func=record_func,
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "microphone failed"
+    else:
+        raise AssertionError("Expected recording error to propagate")
+
+    assert events == ["guard.mute", "record.raises", "guard.restore"]
 
 
 def test_python_module_entrypoint_exposes_main():

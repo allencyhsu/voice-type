@@ -1,4 +1,5 @@
 import argparse
+from collections.abc import Callable
 from datetime import date, datetime
 import json
 import os
@@ -12,6 +13,12 @@ from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
 from voicetype.memory import CorrectionMemoryStore, CorrectionType
 from voicetype.notifier import create_notifier
+from voicetype.output_audio import (
+    OutputMuteGuard,
+    create_output_mute_guard,
+    try_mute_for_recording,
+    try_restore_output,
+)
 from voicetype.pipeline import DictationPipeline, PipelineResult
 from voicetype.qwen_client import QwenClient
 from voicetype.session_log import (
@@ -24,6 +31,22 @@ from voicetype.session_log import (
 )
 from voicetype.settings import Settings
 from voicetype.whisper_client import WhisperClient
+
+
+def record_wav_with_output_muted(
+    seconds: float,
+    *,
+    sample_rate: int,
+    channels: int,
+    output_guard: OutputMuteGuard | None = None,
+    record_func: Callable[..., Path] = record_wav,
+) -> Path:
+    guard = output_guard or create_output_mute_guard()
+    try_mute_for_recording(guard)
+    try:
+        return record_func(seconds, sample_rate=sample_rate, channels=channels)
+    finally:
+        try_restore_output(guard)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -139,7 +162,7 @@ def main() -> None:
 
     audio_file = getattr(args, "audio_file", None)
     if args.command == "record":
-        audio_file = record_wav(
+        audio_file = record_wav_with_output_muted(
             args.seconds or settings.record_seconds,
             sample_rate=settings.sample_rate,
             channels=settings.channels,
@@ -156,6 +179,7 @@ def main() -> None:
 
 def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     recorder = ToggleRecorder(sample_rate=settings.sample_rate, channels=settings.channels)
+    output_guard = create_output_mute_guard()
     notifier = create_notifier(args.notify)
     session_logger = SessionLogger()
     lock = threading.Lock()
@@ -170,6 +194,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
         with lock:
             if not recorder.is_recording:
                 recorder.start()
+                try_mute_for_recording(output_guard)
                 recording_started_at["value"] = current_timestamp()
                 notifier.notify("Listening...")
                 update_listener_status(args, "Listening")
@@ -178,6 +203,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
             notifier.notify("Processing...")
             update_listener_status(args, "Processing")
             audio_path = recorder.stop_to_wav()
+            try_restore_output(output_guard)
             completed_at = current_timestamp()
             segment_started_at = recording_started_at["value"]
             recording_started_at["value"] = None
@@ -250,6 +276,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     finally:
         if recorder.is_recording:
             recorder.cancel()
+            try_restore_output(output_guard)
         update_listener_status(args, "Stopped")
         if listener_holder is not None:
             listener_holder.pop("stop", None)
