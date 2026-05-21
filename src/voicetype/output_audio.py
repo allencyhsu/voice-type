@@ -86,12 +86,22 @@ def try_restore_output(
         report(f"[VoiceType] Could not restore output audio: {exc}")
 
 
-def _default_endpoint_volume() -> EndpointVolume:
+def _endpoint_volume_from_speakers(speakers) -> EndpointVolume:
     from ctypes import POINTER, cast
 
     from comtypes import CLSCTX_ALL
-    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+    from pycaw.pycaw import IAudioEndpointVolume
+
+    endpoint_volume = getattr(speakers, "EndpointVolume", None)
+    if endpoint_volume is not None:
+        return endpoint_volume
+
+    interface = speakers.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    return cast(interface, POINTER(IAudioEndpointVolume))
+
+
+def _default_endpoint_volume() -> EndpointVolume:
+    from pycaw.pycaw import AudioUtilities
 
     devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    return cast(interface, POINTER(IAudioEndpointVolume))
+    return _endpoint_volume_from_speakers(devices)

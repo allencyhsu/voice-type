@@ -1,6 +1,7 @@
 from voicetype.output_audio import (
     NullOutputMuteGuard,
     WindowsOutputMuteGuard,
+    _endpoint_volume_from_speakers,
     try_mute_for_recording,
     try_restore_output,
 )
@@ -26,6 +27,18 @@ class RaisingGuard:
 
     def restore(self) -> None:
         raise RuntimeError("restore failed")
+
+
+class FakeAudioDevice:
+    def __init__(self, endpoint_volume: FakeEndpointVolume) -> None:
+        self.EndpointVolume = endpoint_volume
+
+
+def test_endpoint_volume_from_current_pycaw_audio_device_wrapper():
+    endpoint = FakeEndpointVolume(muted=False)
+    speakers = FakeAudioDevice(endpoint)
+
+    assert _endpoint_volume_from_speakers(speakers) is endpoint
 
 
 def test_windows_guard_restores_unmuted_output_state():
