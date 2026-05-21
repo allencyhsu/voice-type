@@ -26,21 +26,28 @@ def test_settings_read_environment_overrides(monkeypatch):
 from pathlib import Path
 
 
-def _env_example_keys() -> set[str]:
+def _env_example_values() -> dict[str, str]:
     env_example = Path(__file__).resolve().parents[1] / ".env-example"
-    keys: set[str] = set()
+    values: dict[str, str] = {}
     for line in env_example.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        key, separator, _value = stripped.partition("=")
+        key, separator, value = stripped.partition("=")
         assert separator == "=", f"Invalid .env-example line: {line}"
-        keys.add(key)
-    return keys
+        values[key] = value
+    return values
+
+
+def _settings_default_value(value: object) -> str:
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
 
 
 def test_env_example_keys_match_settings_fields():
-    keys = _env_example_keys()
+    env_values = _env_example_values()
+    keys = set(env_values)
     expected_keys = {
         "VOICETYPE_WHISPER_URL",
         "VOICETYPE_LLM_BASE_URL",
@@ -65,3 +72,10 @@ def test_env_example_keys_match_settings_fields():
     } - settings_fields
 
     assert unknown_fields == set()
+
+    settings = Settings()
+    for key, env_value in env_values.items():
+        if not key.startswith(prefix):
+            continue
+        field_name = key.removeprefix(prefix).lower()
+        assert env_value == _settings_default_value(getattr(settings, field_name))
