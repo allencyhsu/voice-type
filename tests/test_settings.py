@@ -21,3 +21,47 @@ def test_settings_read_environment_overrides(monkeypatch):
 
     assert settings.enable_llm is False
     assert settings.llm_model == "custom-model"
+
+
+from pathlib import Path
+
+
+def _env_example_keys() -> set[str]:
+    env_example = Path(__file__).resolve().parents[1] / ".env-example"
+    keys: set[str] = set()
+    for line in env_example.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        key, separator, _value = stripped.partition("=")
+        assert separator == "=", f"Invalid .env-example line: {line}"
+        keys.add(key)
+    return keys
+
+
+def test_env_example_keys_match_settings_fields():
+    keys = _env_example_keys()
+    expected_keys = {
+        "VOICETYPE_WHISPER_URL",
+        "VOICETYPE_LLM_BASE_URL",
+        "VOICETYPE_LLM_MODEL",
+        "VOICETYPE_ASR_TIMEOUT_SEC",
+        "VOICETYPE_LLM_TIMEOUT_SEC",
+        "VOICETYPE_ENABLE_LLM",
+        "VOICETYPE_SAMPLE_RATE",
+        "VOICETYPE_CHANNELS",
+        "VOICETYPE_RECORD_SECONDS",
+        "VOICETYPE_MIN_RECORD_SECONDS",
+    }
+
+    assert expected_keys <= keys
+
+    prefix = "VOICETYPE_"
+    settings_fields = set(Settings.model_fields)
+    unknown_fields = {
+        key.removeprefix(prefix).lower()
+        for key in keys
+        if key.startswith(prefix)
+    } - settings_fields
+
+    assert unknown_fields == set()
