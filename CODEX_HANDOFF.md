@@ -4,12 +4,12 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `main`
-- Latest implementation/test commit covered by this handoff: `5008c26 fix: use native dialog for tray latest log`
+- Latest implementation/test commit covered by this handoff: `33acdc3 fix: open latest log as text file`
 - Env-example docs are covered through the merged env-example commits; check `git log --oneline` for the exact latest docs refresh after this fix commit.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, output-mute work, and the native Windows latest-log dialog fix.
+This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, output-mute work, and the latest-log file presenter fix.
 
 ## Service Endpoints
 
@@ -27,7 +27,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - `.env-example` is a tracked settings template; copy it to ignored `.env` for local endpoint, timeout, recording, and LLM settings.
 - Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
 - Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
-- Tray mode includes `Show Latest Log`, which displays the newest session log record without opening the log directory. On Windows it uses the native MessageBox API instead of Tk messagebox so the dialog can be closed reliably from tray callbacks.
+- Tray mode includes `Show Latest Log`, which writes the newest session log record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file through Windows instead of showing a blocking modal dialog from the tray callback.
 - Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
 - Tray Quit stops the background listener/hotkey path before closing the icon.
 - Right Ctrl toggles listener mode:
@@ -136,30 +136,22 @@ python -m voicetype tray --help
 python -m voicetype listen --help
 ```
 
-Last known verification:
+Last known verification for the latest-log file presenter fix:
 
 ```text
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-OK, installed pycaw/comtypes runtime dependency in the worktree venv
-
 .\.venv\Scripts\python.exe -m pytest -q
-100 passed
+104 passed
 
 .\.venv\Scripts\python.exe -m compileall -q src tests
 OK
 
-.\.venv\Scripts\python.exe -m voicetype --help
-OK
-
-.\.venv\Scripts\python.exe -m voicetype record --help
-OK
-
-.\.venv\Scripts\python.exe -m voicetype listen --help
-OK
-
 .\.venv\Scripts\python.exe -m voicetype tray --help
 OK
+```
 
+Earlier real Windows output endpoint smoke:
+
+```text
 real Windows output endpoint smoke
 OK, pycaw resolved AudioUtilities.GetSpeakers().EndpointVolume
 OK, mute state changed initial 0 -> during 1 -> restored 0
@@ -167,7 +159,11 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 
 ## Recent Commits
 
+- `33acdc3 fix: open latest log as text file`
 - `35e1ad4 docs: refresh env example handoff state`
+- `5008c26 fix: use native dialog for tray latest log`
+- `04122b0 docs: refresh handoff after tray dialog fix`
+- `8d605e0 docs: refresh handoff after env example merge`
 - `23d884b docs: document env settings workflow`
 - `efd0844 test: verify env example defaults`
 - `5393762 feat: add env example template`
