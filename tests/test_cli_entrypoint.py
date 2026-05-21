@@ -83,6 +83,13 @@ class FakeRecorder:
         self.is_recording = False
 
 
+class FakeRecorderStopFails(FakeRecorder):
+    def stop_to_wav(self):
+        self.events.append("recorder.stop")
+        self.is_recording = False
+        raise RuntimeError("stop failed")
+
+
 def _listen_args(**overrides):
     values = {
         "notify": "off",
@@ -105,9 +112,17 @@ def _settings(**overrides):
     return SimpleNamespace(**values)
 
 
-def _patch_listen_dependencies(monkeypatch, events, tmp_path, *, duration_seconds, interrupt=False):
+def _patch_listen_dependencies(
+    monkeypatch,
+    events,
+    tmp_path,
+    *,
+    duration_seconds,
+    interrupt=False,
+    recorder_class=FakeRecorder,
+):
     guard = FakeOutputGuard(events)
-    recorder = FakeRecorder(events, tmp_path / "listen.wav", duration_seconds=duration_seconds)
+    recorder = recorder_class(events, tmp_path / "listen.wav", duration_seconds=duration_seconds)
 
     monkeypatch.setattr(cli, "create_output_mute_guard", lambda: guard)
     monkeypatch.setattr(cli, "ToggleRecorder", lambda *, sample_rate, channels: recorder)
@@ -157,6 +172,32 @@ def test_run_listen_keyboard_interrupt_while_recording_cancels_and_restores(monk
 
     assert events.index("recorder.start") < events.index("guard.mute")
     assert events.index("guard.mute") < events.index("recorder.cancel") < events.index("guard.restore")
+    assert not any(event.startswith("pipeline.process") for event in events)
+
+
+def test_run_listen_restores_output_when_stop_to_wav_fails_after_recording_clears(
+    monkeypatch, tmp_path
+):
+    events = []
+    _patch_listen_dependencies(
+        monkeypatch,
+        events,
+        tmp_path,
+        duration_seconds=1.25,
+        recorder_class=FakeRecorderStopFails,
+    )
+
+    try:
+        run_listen(_listen_args(), _settings(), FakePipeline(events))
+    except RuntimeError as exc:
+        assert str(exc) == "stop failed"
+    else:
+        raise AssertionError("Expected stop failure to propagate")
+
+    assert events.count("recorder.start") == 1
+    assert events.count("recorder.stop") == 1
+    assert events.index("recorder.start") < events.index("guard.mute") < events.index("recorder.stop")
+    assert events.index("recorder.stop") < events.index("guard.restore")
     assert not any(event.startswith("pipeline.process") for event in events)
 
 

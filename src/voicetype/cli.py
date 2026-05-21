@@ -202,8 +202,10 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
 
             notifier.notify("Processing...")
             update_listener_status(args, "Processing")
-            audio_path = recorder.stop_to_wav()
-            try_restore_output(output_guard)
+            try:
+                audio_path = recorder.stop_to_wav()
+            finally:
+                try_restore_output(output_guard)
             completed_at = current_timestamp()
             segment_started_at = recording_started_at["value"]
             recording_started_at["value"] = None
