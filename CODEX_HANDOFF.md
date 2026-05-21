@@ -128,53 +128,39 @@ Verification:
 python -m pytest -q
 python -m compileall -q src tests
 python -m voicetype --help
+python -m voicetype record --help
 python -m voicetype tray --help
-python -m voicetype logs --help
 python -m voicetype listen --help
-python -m voicetype memory --help
-python -m voicetype memory add --help
-python -m voicetype logs --last --json
 ```
 
 Last known verification:
 
 ```text
-python -m pytest -q
-73 passed
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+OK, installed pycaw/comtypes runtime dependency in the worktree venv
 
-python -m compileall -q src tests
+.\.venv\Scripts\python.exe -m pytest -q
+99 passed
+
+.\.venv\Scripts\python.exe -m compileall -q src tests
 OK
 
-python -m voicetype --help
+.\.venv\Scripts\python.exe -m voicetype --help
 OK
 
-python -m voicetype tray --help
+.\.venv\Scripts\python.exe -m voicetype record --help
 OK
 
-python -m voicetype logs --last --json
-OK, printed the newest local session JSON record
-
-controlled tray launch
-python -m voicetype tray stayed alive for 5 seconds and was stopped cleanly
-
-active app smoke
-get_active_app_name() returned Code in the recent workspace
-
-python -m voicetype logs --help
+.\.venv\Scripts\python.exe -m voicetype listen --help
 OK
 
-python -m voicetype listen --help
-OK
-
-python -m voicetype memory --help
-OK
-
-python -m voicetype memory add --help
+.\.venv\Scripts\python.exe -m voicetype tray --help
 OK
 ```
 
 ## Recent Output-Mute Commits Before This Handoff Refresh
 
+- `c07ad93 docs: make output mute handoff state durable`
 - `cf7108d docs: align output mute handoff commit state`
 - `4f8423e docs: refresh output mute handoff state`
 - `5f8f5bb docs: document recording output mute`
