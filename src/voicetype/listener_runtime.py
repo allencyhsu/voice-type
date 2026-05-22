@@ -80,7 +80,7 @@ def build_default_listener_runner(
         no_llm=not settings.enable_llm,
         hotword=[],
         min_seconds=None,
-        notify="overlay",
+        notify=settings.notify,
         status_callback=status_callback,
         listener_holder=stop_listener_holder,
     )

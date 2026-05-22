@@ -49,6 +49,15 @@ def test_tray_controller_can_show_latest_log():
     assert messages == [("VoiceType Latest Log", "latest log line")]
 
 
+def test_tray_controller_opens_settings_window():
+    calls = []
+    controller = TrayController(runtime=FakeRuntime(), settings_opener=lambda: calls.append("settings"))
+
+    controller.open_settings()
+
+    assert calls == ["settings"]
+
+
 def test_default_show_latest_log_writes_file_and_opens_it(tmp_path):
     opened = []
 

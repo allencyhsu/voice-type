@@ -73,7 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     listen_parser.add_argument("--no-llm", action="store_true")
     listen_parser.add_argument("--hotword", action="append", default=[])
     listen_parser.add_argument("--min-seconds", type=float, default=None)
-    listen_parser.add_argument("--notify", choices=["overlay", "console", "toast", "off"], default="overlay")
+    listen_parser.add_argument("--notify", choices=["overlay", "console", "toast", "off"], default=None)
 
     logs_parser = subparsers.add_parser("logs")
     logs_parser.add_argument("--today", action="store_true", default=True)
@@ -180,7 +180,7 @@ def main() -> None:
 def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
     recorder = ToggleRecorder(sample_rate=settings.sample_rate, channels=settings.channels)
     output_guard = create_output_mute_guard()
-    notifier = create_notifier(args.notify)
+    notifier = create_notifier(args.notify or settings.notify)
     session_logger = SessionLogger()
     lock = threading.Lock()
     min_seconds = args.min_seconds or settings.min_record_seconds

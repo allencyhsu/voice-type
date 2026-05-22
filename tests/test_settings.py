@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from voicetype.settings import Settings
 
 
@@ -26,7 +29,47 @@ def test_settings_read_environment_overrides(monkeypatch):
     assert settings.llm_model == "custom-model"
 
 
-from pathlib import Path
+def test_settings_read_user_settings_below_dotenv_and_environment(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local"))
+    settings_path = tmp_path / "local" / "VoiceType" / "settings.json"
+    settings_path.parent.mkdir(parents=True)
+    settings_path.write_text(
+        json.dumps(
+            {
+                "llm_model": "json-model",
+                "enable_llm": False,
+                "record_seconds": 5.5,
+                "notify": "console",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / ".env").write_text("VOICETYPE_LLM_MODEL=dotenv-model\n", encoding="utf-8")
+    monkeypatch.setenv("VOICETYPE_ENABLE_LLM", "true")
+
+    settings = Settings()
+
+    assert settings.llm_model == "dotenv-model"
+    assert settings.enable_llm is True
+    assert settings.record_seconds == 5.5
+    assert settings.notify == "console"
+
+
+def test_settings_ignore_invalid_user_settings_values(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local"))
+    settings_path = tmp_path / "local" / "VoiceType" / "settings.json"
+    settings_path.parent.mkdir(parents=True)
+    settings_path.write_text(
+        json.dumps({"notify": "bad", "record_seconds": -1}),
+        encoding="utf-8",
+    )
+
+    settings = Settings()
+
+    assert settings.notify == "overlay"
+    assert settings.record_seconds == 8.0
 
 
 def _env_example_values() -> dict[str, str]:

@@ -17,10 +17,12 @@ class TrayController:
         runtime: VoiceTypeListenerRuntime,
         latest_log_provider: Callable[[], str] | None = None,
         message_presenter: Callable[[str, str], None] | None = None,
+        settings_opener: Callable[[], None] | None = None,
     ) -> None:
         self.runtime = runtime
         self.latest_log_provider = latest_log_provider or latest_log_text
         self.message_presenter = message_presenter or show_latest_log_file
+        self.settings_opener = settings_opener or open_settings
 
     def start(self) -> None:
         self.runtime.start_in_thread()
@@ -44,6 +46,9 @@ class TrayController:
 
     def show_latest_log(self) -> None:
         self.message_presenter("VoiceType Latest Log", self.latest_log_provider())
+
+    def open_settings(self) -> None:
+        self.settings_opener()
 
     def quit(self, icon) -> None:
         self.runtime.stop()
@@ -73,6 +78,12 @@ def show_latest_log_file(
     open_file = opener or os.startfile
     open_file(output_path)
     return output_path
+
+
+def open_settings() -> None:
+    from voicetype.settings_ui import open_settings_window
+
+    open_settings_window()
 
 
 def show_message(title: str, message: str) -> None:
@@ -135,6 +146,7 @@ def run_tray_app() -> None:
         "VoiceType",
         menu=pystray.Menu(
             pystray.MenuItem(lambda item: controller.status_label(), None, enabled=False),
+            pystray.MenuItem("Settings...", lambda icon, item: controller.open_settings()),
             pystray.MenuItem("Show Latest Log", lambda icon, item: controller.show_latest_log()),
             pystray.MenuItem("Open Logs", lambda icon, item: controller.open_logs()),
             pystray.MenuItem(lambda item: controller.startup_label(), lambda icon, item: controller.toggle_startup()),

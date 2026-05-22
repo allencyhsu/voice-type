@@ -27,7 +27,7 @@ python -m pip install -e ".[dev]"
 Copy-Item .env-example .env
 ```
 
-Edit `.env` to change service endpoints, timeouts, recording defaults, or whether Qwen polish is enabled. `.env` is local and ignored by git; direct `VOICETYPE_*` environment variables still override `.env` values.
+Edit `.env` to change service endpoints, timeouts, recording defaults, notification mode, or whether Qwen polish is enabled. `.env` is local and ignored by git; direct `VOICETYPE_*` environment variables still override `.env` values. Tray Settings saves user-facing settings to `%LOCALAPPDATA%\VoiceType\settings.json`, and both direct environment variables and `.env` still take priority over that file.
 
 ## Verify Services
 
@@ -71,7 +71,17 @@ For no-console startup, create a shortcut or startup entry that runs:
 .\.venv\Scripts\pythonw.exe -m voicetype tray
 ```
 
-The tray menu includes live status, Show Latest Log, Open Logs, startup-at-login, and quit actions. Show Latest Log writes the newest record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file instead of showing a blocking modal dialog. Quit stops the background listener before closing the tray icon.
+The tray menu includes live status, Settings, Show Latest Log, Open Logs, startup-at-login, and quit actions. Show Latest Log writes the newest record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file instead of showing a blocking modal dialog. Quit stops the background listener before closing the tray icon.
+
+## Settings UI
+
+In tray mode, choose `Settings...` from the tray menu to open the native settings window. It can save common service, Qwen, notification, and recording settings to:
+
+```text
+%LOCALAPPDATA%\VoiceType\settings.json
+```
+
+The settings window can also toggle start-at-login, open logs, show the latest log, and add or remove correction memory entries. Service URL, model, Qwen enablement, notification mode, and recording threshold changes are saved for the next VoiceType restart. Direct `VOICETYPE_*` environment variables override `.env`, and `.env` overrides the Settings UI JSON file.
 
 Manual test flow:
 

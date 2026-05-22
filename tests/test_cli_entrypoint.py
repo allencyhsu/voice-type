@@ -107,6 +107,7 @@ def _settings(**overrides):
         "sample_rate": 16000,
         "channels": 1,
         "min_record_seconds": 0.7,
+        "notify": "overlay",
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -274,12 +275,22 @@ def test_listen_parser_accepts_notify_mode():
     assert args.notify == "overlay"
 
 
-def test_listen_parser_defaults_to_overlay_notify_mode():
+def test_listen_parser_leaves_notify_unset_for_settings_default():
     parser = build_parser()
 
     args = parser.parse_args(["listen"])
 
-    assert args.notify == "overlay"
+    assert args.notify is None
+
+
+def test_run_listen_uses_settings_notify_when_arg_is_unset(monkeypatch, tmp_path):
+    events = []
+    _patch_listen_dependencies(monkeypatch, events, tmp_path, duration_seconds=1.25)
+    monkeypatch.setattr(cli, "create_notifier", lambda notify: events.append(f"notifier:{notify}") or FakeNotifier(events))
+
+    run_listen(_listen_args(notify=None), _settings(notify="toast"), FakePipeline(events))
+
+    assert "notifier:toast" in events
 
 
 def test_logs_parser_accepts_today_limit_json_and_open_dir():

@@ -5,12 +5,12 @@
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `main`
 - Latest committed baseline before this handoff update: `33acdc3 fix: open latest log as text file`
-- This handoff update covers the ASR timeout recovery fix: Whisper request timeouts become a pipeline `asr_error` result instead of escaping through the listener path.
+- This handoff update covers Settings UI v1: tray Settings opens a native Tk window, writes user settings JSON, and manages startup/log/correction-memory actions.
 - Env-example docs are covered through the merged env-example commits; check `git log --oneline` for the exact latest docs refresh after this fix commit.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
+This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, Settings UI v1, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
 
 ## Service Endpoints
 
@@ -26,8 +26,11 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 
 - CLI package with `doctor`, `transcribe`, `record`, `listen`, `logs`, `memory`, and `tray` commands.
 - `.env-example` is a tracked settings template; copy it to ignored `.env` for local endpoint, timeout, recording, and LLM settings.
+- Settings precedence is direct `VOICETYPE_*` environment variables, then `.env`, then `%LOCALAPPDATA%\VoiceType\settings.json`, then built-in defaults.
 - Tray mode wraps the existing listener runtime and keeps Right Ctrl as the recording toggle.
 - Tray status now reflects the listener state (`Ready`, `Listening`, `Processing`, `Stopped`, or `Error`) instead of only showing a generic running state.
+- Tray mode includes `Settings...`, which opens a modeless native Tk settings window. The window saves service URL, Qwen, notification, and recording threshold settings to `%LOCALAPPDATA%\VoiceType\settings.json`.
+- The Settings window can toggle the existing Startup folder entry, open logs, show the latest log, and add/remove correction memory entries without forking the listener core.
 - Tray mode includes `Show Latest Log`, which writes the newest session log record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file through Windows instead of showing a blocking modal dialog from the tray callback.
 - Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
 - Tray Quit stops the background listener/hotkey path before closing the icon.
@@ -47,6 +50,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
   - `--notify console`
   - `--notify toast`
   - `--notify off`
+- Tray listener notification mode can also come from `VOICETYPE_NOTIFY`, `.env`, or Settings UI JSON.
 - Audio normalization is applied before transcription when the captured peak is low.
 - Very short accidental recordings are ignored by `min_record_seconds`, default `0.7`.
 - Temporary WAV files are retained for the current local calendar day only. On startup, `voicetype-*.wav` older than local midnight are removed.
@@ -138,20 +142,32 @@ python -m voicetype tray --help
 python -m voicetype listen --help
 ```
 
-Last known verification for the ASR timeout recovery change:
+Last known verification for the Settings UI v1 change:
 
 ```text
-.\.venv\Scripts\python.exe -m pytest tests/test_pipeline.py::test_pipeline_result_reports_asr_request_timeout_without_pasting -q
-1 passed
+.\.venv\Scripts\python.exe -m pytest tests/test_user_settings.py tests/test_settings.py tests/test_settings_ui.py tests/test_tray.py tests/test_listener_runtime.py tests/test_cli_entrypoint.py -q
+53 passed
 
 .\.venv\Scripts\python.exe -m pytest -q
-105 passed
+121 passed
+
+.\.venv\Scripts\python.exe -m compileall -q src tests
+OK
+
+.\.venv\Scripts\python.exe -m voicetype --help
+OK
+
+.\.venv\Scripts\python.exe -m voicetype tray --help
+OK
+
+.\.venv\Scripts\python.exe -m voicetype listen --help
+OK
+
+Tk construction smoke for `SettingsWindow`
+settings window constructed
 
 git diff --check
 OK
-
-VOICETYPE_ASR_TIMEOUT_SEC probe:
-Settings override `3` read correctly, and `WhisperClient(... timeout_sec=7)` passed `timeout=7` to `requests.post`.
 ```
 
 Earlier real Windows output endpoint smoke:
@@ -245,6 +261,8 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 - `src/voicetype/listener_runtime.py` - background runtime wrapper for listener mode
 - `src/voicetype/startup.py` - Windows Startup folder entry management
 - `src/voicetype/tray.py` - tray controller, menu actions, icon generation, and pystray entrypoint
+- `src/voicetype/user_settings.py` - `%LOCALAPPDATA%\VoiceType\settings.json` load/save helpers
+- `src/voicetype/settings_ui.py` - native Tk settings window and testable settings UI model
 - `src/voicetype/notifier.py` - console/toast/overlay notifications and overlay presentation rules
 - `src/voicetype/session_log.py` - JSONL session log writer and record builder
 - `src/voicetype/pipeline.py` - ASR, optional Qwen polish, paste orchestration
@@ -262,7 +280,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 
 ## Suggested Next Steps
 
-1. Manually validate tray icon right-click menu, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
+1. Manually validate tray icon right-click menu, `Settings...`, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
 2. Add an optional setting for log retention or cleanup if JSONL grows too large.
 3. Improve the Qwen prompt with explicit app-specific style hints now that app context and correction memory are available.
 4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
