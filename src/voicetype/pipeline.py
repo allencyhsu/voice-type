@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+import requests
+
 from voicetype.memory import CorrectionMemoryStore, select_relevant_corrections, select_whisper_hotwords
 
 
@@ -88,11 +90,22 @@ class DictationPipeline:
     ) -> PipelineResult:
         input_hotwords = hotwords or []
         whisper_hotwords = select_whisper_hotwords(input_hotwords)
-        result = self.whisper.transcribe(
-            Path(audio_path),
-            initial_prompt=initial_prompt,
-            hotwords=whisper_hotwords,
-        )
+        try:
+            result = self.whisper.transcribe(
+                Path(audio_path),
+                initial_prompt=initial_prompt,
+                hotwords=whisper_hotwords,
+            )
+        except requests.RequestException as exc:
+            return PipelineResult(
+                status="asr_error",
+                raw_text="",
+                final_text="",
+                error=str(exc),
+                whisper_hotwords=whisper_hotwords,
+                whisper_hotword_count_before=len(input_hotwords),
+                whisper_hotword_count_after=len(whisper_hotwords),
+            )
         raw_text = result.text if result.success else ""
         if not raw_text:
             return PipelineResult(

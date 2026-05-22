@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import requests
+
 from voicetype.memory import CorrectionEntry, CorrectionType
 from voicetype.pipeline import DictationPipeline
 from voicetype.whisper_client import TranscriptionResult, TranscriptionSegment
@@ -12,6 +14,11 @@ class FakeWhisper:
 
     def transcribe(self, path: Path, *, initial_prompt: str, hotwords: list[str]):
         return self.result
+
+
+class FakeTimeoutWhisper:
+    def transcribe(self, path: Path, *, initial_prompt: str, hotwords: list[str]):
+        raise requests.Timeout("ASR timed out")
 
 
 class FakeQwen:
@@ -116,6 +123,21 @@ def test_pipeline_result_reports_failed_asr_reason(tmp_path):
     assert result.raw_text == ""
     assert result.final_text == ""
     assert result.error == "no speech"
+    assert injector.text is None
+
+
+def test_pipeline_result_reports_asr_request_timeout_without_pasting(tmp_path):
+    audio_path = tmp_path / "sample.wav"
+    audio_path.write_bytes(b"fake")
+    injector = FakeInjector()
+
+    pipeline = DictationPipeline(FakeTimeoutWhisper(), FakeQwen(), injector, enable_llm=True)
+    result = pipeline.process_file_result(audio_path)
+
+    assert result.status == "asr_error"
+    assert result.raw_text == ""
+    assert result.final_text == ""
+    assert result.error == "ASR timed out"
     assert injector.text is None
 
 

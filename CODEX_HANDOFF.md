@@ -4,12 +4,13 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `main`
-- Latest implementation/test commit covered by this handoff: `33acdc3 fix: open latest log as text file`
+- Latest committed baseline before this handoff update: `33acdc3 fix: open latest log as text file`
+- This handoff update covers the ASR timeout recovery fix: Whisper request timeouts become a pipeline `asr_error` result instead of escaping through the listener path.
 - Env-example docs are covered through the merged env-example commits; check `git log --oneline` for the exact latest docs refresh after this fix commit.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, output-mute work, and the latest-log file presenter fix.
+This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
 
 ## Service Endpoints
 
@@ -59,6 +60,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - The `memory` CLI can add, list, remove, and learn conservative phrase corrections from the latest session log.
 - Listener mode detects the currently focused Windows app and passes the app name to Qwen as `app_name`.
 - Listener session logs include `app_name`; older logs before this feature show `app=unknown` in summaries.
+- Whisper request errors such as `VOICETYPE_ASR_TIMEOUT_SEC` read timeouts are converted into an `asr_error` pipeline result. VoiceType does not paste text for those failures, and the listener path can return to `Ready` instead of letting the timeout exception stop the hotkey callback.
 - Qwen polish is instructed to preserve the Chinese script used by the transcript. Traditional Chinese input should remain Traditional Chinese, and Simplified Chinese input should remain Simplified Chinese.
 - Qwen polish fails open to raw Whisper text on server error, timeout, invalid JSON, or unusable response.
 
@@ -136,17 +138,20 @@ python -m voicetype tray --help
 python -m voicetype listen --help
 ```
 
-Last known verification for the latest-log file presenter fix:
+Last known verification for the ASR timeout recovery change:
 
 ```text
+.\.venv\Scripts\python.exe -m pytest tests/test_pipeline.py::test_pipeline_result_reports_asr_request_timeout_without_pasting -q
+1 passed
+
 .\.venv\Scripts\python.exe -m pytest -q
-104 passed
+105 passed
 
-.\.venv\Scripts\python.exe -m compileall -q src tests
+git diff --check
 OK
 
-.\.venv\Scripts\python.exe -m voicetype tray --help
-OK
+VOICETYPE_ASR_TIMEOUT_SEC probe:
+Settings override `3` read correctly, and `WhisperClient(... timeout_sec=7)` passed `timeout=7` to `requests.post`.
 ```
 
 Earlier real Windows output endpoint smoke:
