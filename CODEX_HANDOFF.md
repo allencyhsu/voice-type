@@ -4,12 +4,12 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `main`
-- Latest committed baseline before this handoff update: `f1ddc61 feat: add tray settings UI`
-- This handoff update covers OGG/Opus recording: VoiceType records and uploads `.ogg` Opus audio by default, with no WAV recording fallback. Existing `transcribe` can still submit server-supported audio files such as MP3, M4A, WAV, and OGG/Opus.
+- Latest committed baseline before this handoff update: `0cdf09d feat: record dictation as opus`
+- This handoff update covers tray restart: the tray menu now includes `Restart VoiceType`, which launches a fresh tray process, then stops the current listener and tray icon. If launching the replacement process fails, the current tray app stays running and shows a tray-safe error message.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType main branch state, including the OGG/Opus recording default, env-example settings workflow, Settings UI v1, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
+This handoff tracks the current VoiceType main branch state, including tray process restart, the OGG/Opus recording default, env-example settings workflow, Settings UI v1, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
 
 ## Service Endpoints
 
@@ -32,6 +32,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - The Settings window can toggle the existing Startup folder entry, open logs, show the latest log, and add/remove correction memory entries without forking the listener core.
 - Tray mode includes `Show Latest Log`, which writes the newest session log record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file through Windows instead of showing a blocking modal dialog from the tray callback.
 - Tray mode can toggle a Windows Startup folder entry named `VoiceType.cmd`.
+- Tray mode includes `Restart VoiceType`, which starts a replacement process with `pythonw.exe -m voicetype tray` when `pythonw.exe` is available, then stops the current background listener and tray icon.
 - Tray Quit stops the background listener/hotkey path before closing the icon.
 - Right Ctrl toggles listener mode:
   - first press starts recording
@@ -141,11 +142,14 @@ python -m voicetype tray --help
 python -m voicetype listen --help
 ```
 
-Last known verification for the OGG/Opus recording change:
+Last known verification for the tray restart change:
 
 ```text
+.\.venv\Scripts\python.exe -m pytest tests/test_tray.py -q
+13 passed
+
 .\.venv\Scripts\python.exe -m pytest -q
-122 passed
+127 passed
 
 .\.venv\Scripts\python.exe -m compileall -q src tests
 OK
@@ -178,6 +182,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 
 ## Recent Commits
 
+- `0cdf09d feat: record dictation as opus`
 - `f1ddc61 feat: add tray settings UI`
 - `4635f13 fix: handle ASR request timeouts`
 - `63a3e6c docs: refresh handoff after latest log file change`
@@ -280,7 +285,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 
 ## Suggested Next Steps
 
-1. Manually validate tray icon right-click menu, `Settings...`, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
+1. Manually validate tray icon right-click menu, `Settings...`, `Show Latest Log`, `Restart VoiceType`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
 2. Add an optional setting for log retention or cleanup if JSONL grows too large.
 3. Improve the Qwen prompt with explicit app-specific style hints now that app context and correction memory are available.
 4. Add an integration smoke script that records a very short OGG/Opus file, transcribes it with `--no-paste --no-llm`, and prints the session log path.

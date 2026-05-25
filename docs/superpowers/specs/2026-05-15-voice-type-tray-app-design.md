@@ -25,6 +25,7 @@ The first tray version should feel like a lightweight resident utility:
    - open logs directory
    - show latest log
    - enable or disable startup at login
+   - restart VoiceType after code or settings changes
    - quit VoiceType
 
 The tray icon is not the recording trigger in v1. Recording remains controlled by Right Ctrl so that the existing tested flow remains stable.
@@ -53,6 +54,7 @@ Startup-at-login is implemented with a Windows Startup folder entry. This keeps 
   - Opens logs folder.
   - Shows latest log using existing session log formatting helpers.
   - Toggles startup at login.
+  - Restarts the tray process by launching a fresh `pythonw.exe -m voicetype tray` process when `pythonw.exe` is available, then stopping the current listener and icon.
   - Quits cleanly.
 
 - `src/voicetype/cli.py`
@@ -95,6 +97,7 @@ The overlay remains the primary high-visibility state surface. Tray status is a 
 - If tray dependencies are missing, `python -m voicetype tray` should print an actionable install message.
 - If startup folder access fails, show a tray-safe error message and do not crash the listener.
 - If logs do not exist, `Show Latest Log` should display or print the same friendly message as `logs --last`.
+- If restarting cannot launch a replacement process, keep the current listener and tray icon running and show a tray-safe error message.
 - If the listener crashes, tray status should move to `Error`.
 
 ## Privacy and Retention
@@ -109,6 +112,7 @@ Manual smoke checks are still required on Windows for:
 
 - `python -m voicetype tray`
 - right-click tray menu appears
+- `Restart VoiceType` launches a replacement process and closes the old tray app
 - Right Ctrl listener still works
 - startup entry enable/disable creates/removes the expected file
 - `Quit VoiceType` stops the tray app
@@ -121,6 +125,7 @@ Manual smoke checks are still required on Windows for:
 - Tray menu can open logs directory.
 - Tray menu can show latest log.
 - Tray menu can enable and disable startup at login.
+- Tray menu can restart VoiceType by launching a fresh tray process.
 - Startup entry points to tray mode.
 - Tests pass.
 - Handoff and README are updated.

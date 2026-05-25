@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 from collections.abc import Callable
 from datetime import date
 from pathlib import Path
@@ -18,11 +20,13 @@ class TrayController:
         latest_log_provider: Callable[[], str] | None = None,
         message_presenter: Callable[[str, str], None] | None = None,
         settings_opener: Callable[[], None] | None = None,
+        restart_starter: Callable[[], object] | None = None,
     ) -> None:
         self.runtime = runtime
         self.latest_log_provider = latest_log_provider or latest_log_text
         self.message_presenter = message_presenter or show_latest_log_file
         self.settings_opener = settings_opener or open_settings
+        self.restart_starter = restart_starter or start_replacement_process
 
     def start(self) -> None:
         self.runtime.start_in_thread()
@@ -51,6 +55,16 @@ class TrayController:
         self.settings_opener()
 
     def quit(self, icon) -> None:
+        self.runtime.stop()
+        icon.stop()
+
+    def restart(self, icon) -> None:
+        try:
+            self.restart_starter()
+        except OSError as exc:
+            self.message_presenter("VoiceType Restart Failed", f"Could not restart VoiceType: {exc}")
+            return
+
         self.runtime.stop()
         icon.stop()
 
@@ -84,6 +98,22 @@ def open_settings() -> None:
     from voicetype.settings_ui import open_settings_window
 
     open_settings_window()
+
+
+def build_restart_command(*, python_executable: str | Path | None = None) -> list[str]:
+    executable = Path(python_executable or sys.executable)
+    pythonw = executable.with_name("pythonw.exe")
+    launcher = pythonw if pythonw.exists() else executable
+    return [str(launcher), "-m", "voicetype", "tray"]
+
+
+def start_replacement_process(
+    *,
+    python_executable: str | Path | None = None,
+    popen: Callable[..., object] | None = None,
+) -> object:
+    launcher = popen or subprocess.Popen
+    return launcher(build_restart_command(python_executable=python_executable), cwd=str(Path.cwd()))
 
 
 def show_message(title: str, message: str) -> None:
@@ -150,6 +180,7 @@ def run_tray_app() -> None:
             pystray.MenuItem("Show Latest Log", lambda icon, item: controller.show_latest_log()),
             pystray.MenuItem("Open Logs", lambda icon, item: controller.open_logs()),
             pystray.MenuItem(lambda item: controller.startup_label(), lambda icon, item: controller.toggle_startup()),
+            pystray.MenuItem("Restart VoiceType", lambda icon, item: controller.restart(icon)),
             pystray.MenuItem("Quit VoiceType", lambda icon, item: controller.quit(icon)),
         ),
     )

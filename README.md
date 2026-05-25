@@ -75,7 +75,7 @@ For no-console startup, create a shortcut or startup entry that runs:
 .\.venv\Scripts\pythonw.exe -m voicetype tray
 ```
 
-The tray menu includes live status, Settings, Show Latest Log, Open Logs, startup-at-login, and quit actions. Show Latest Log writes the newest record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file instead of showing a blocking modal dialog. Quit stops the background listener before closing the tray icon.
+The tray menu includes live status, Settings, Show Latest Log, Open Logs, startup-at-login, Restart VoiceType, and quit actions. Show Latest Log writes the newest record to `%LOCALAPPDATA%\VoiceType\latest-log.txt` and opens that file instead of showing a blocking modal dialog. Restart VoiceType launches a fresh tray process with `pythonw.exe -m voicetype tray` when `pythonw.exe` is available, then stops the current listener and tray icon. Quit stops the background listener before closing the tray icon.
 
 ## Settings UI
 
@@ -85,7 +85,7 @@ In tray mode, choose `Settings...` from the tray menu to open the native setting
 %LOCALAPPDATA%\VoiceType\settings.json
 ```
 
-The settings window can also toggle start-at-login, open logs, show the latest log, and add or remove correction memory entries. Service URL, model, Qwen enablement, notification mode, and recording threshold changes are saved for the next VoiceType restart. Direct `VOICETYPE_*` environment variables override `.env`, and `.env` overrides the Settings UI JSON file.
+The settings window can also toggle start-at-login, open logs, show the latest log, and add or remove correction memory entries. Service URL, model, Qwen enablement, notification mode, and recording threshold changes are saved for the next VoiceType restart; use the tray `Restart VoiceType` action to reload the app after saving code or settings changes. Direct `VOICETYPE_*` environment variables override `.env`, and `.env` overrides the Settings UI JSON file.
 
 Manual test flow:
 
