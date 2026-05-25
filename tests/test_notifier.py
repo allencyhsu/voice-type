@@ -73,7 +73,7 @@ def test_overlay_notifier_suppresses_diagnostic_messages():
 
     notifier = OverlayNotifier(overlay_factory=FakeOverlay)
 
-    notifier.notify("Captured 1.23s, 1234 bytes: C:\\Temp\\voicetype-test.wav")
+    notifier.notify("Captured 1.23s, 1234 bytes: C:\\Temp\\voicetype-test.ogg")
     notifier.notify("Normalized audio gain=50.0x peak=0.0100->0.5000")
     notifier.notify("Listening...")
 

@@ -37,11 +37,15 @@ python -m voicetype doctor
 
 ## Transcribe Existing Audio
 
+The existing Whisper server can transcribe common audio files such as OGG/Opus, MP3, M4A, and WAV.
+
 ```powershell
-python -m voicetype transcribe path\to\sample.wav
+python -m voicetype transcribe path\to\sample.ogg
 ```
 
 ## Record and Paste
+
+VoiceType records and uploads OGG/Opus audio by default. Recorded dictation does not use a WAV upload fallback.
 
 ```powershell
 python -m voicetype record --seconds 8 --paste
@@ -131,7 +135,7 @@ The terminal prints status messages:
 ```text
 [VoiceType] Listening...
 [VoiceType] Processing...
-[VoiceType] Captured 4.50s, 143980 bytes: C:\Users\...\voicetype-abc.wav
+[VoiceType] Captured 4.50s, 14398 bytes: C:\Users\...\voicetype-abc.ogg
 [VoiceType] Normalized audio gain=50.0x peak=0.0106->0.5310
 [VoiceType] Ignored short recording (0.31s < 0.70s).
 [VoiceType] Inserted text.
@@ -202,24 +206,24 @@ python -m voicetype memory learn --from-last --corrected "corrected final text"
 If VoiceType prints `No text recognized`, check the diagnostic line before it:
 
 ```text
-[VoiceType] Captured 0.12s, 44 bytes: C:\Users\...\voicetype-abc.wav
+[VoiceType] Captured 0.12s, 940 bytes: C:\Users\...\voicetype-abc.ogg
 [VoiceType] No text recognized. status=empty_transcript
 ```
 
-- Very short duration or a tiny WAV file means the recording toggle happened too quickly or no microphone samples arrived.
+- Very short duration or a tiny OGG/Opus file means the recording toggle happened too quickly or no microphone samples arrived.
 - `status=empty_transcript` means Whisper accepted the request but returned no segments.
 - `status=asr_failed` means the Whisper API returned a failed transcription response.
 - `error=...` shows the Whisper server error when it provides one.
 
 ## Temporary Audio Retention
 
-VoiceType writes recorded WAV files to the Windows temp directory with names like:
+VoiceType writes recorded OGG/Opus files to the Windows temp directory with names like:
 
 ```text
-C:\Users\Allen\AppData\Local\Temp\voicetype-xxxx.wav
+C:\Users\Allen\AppData\Local\Temp\voicetype-xxxx.ogg
 ```
 
-These files are kept for the current calendar day. Each time VoiceType starts, it removes `voicetype-*.wav` files whose modified time is earlier than local midnight for the current day. For example, when VoiceType starts on May 15 at 09:00, files from before May 15 00:00 are deleted, while files recorded after May 15 00:00 are retained.
+These files are kept for the current calendar day. Each time VoiceType starts, it removes `voicetype-*.ogg` files whose modified time is earlier than local midnight for the current day. Startup cleanup also removes legacy `voicetype-*.wav` files from earlier builds. For example, when VoiceType starts on May 15 at 09:00, files from before May 15 00:00 are deleted, while files recorded after May 15 00:00 are retained.
 
 ## Session Logs
 
@@ -229,7 +233,7 @@ Each listener segment writes one JSONL record to:
 %LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl
 ```
 
-The log includes the segment start/end time, focused app name, WAV path, duration, byte size, normalization details, Whisper status, recognized text, final text, and whether text was pasted. Short ignored recordings are logged too, with an `ignored_reason`.
+The log includes the segment start/end time, focused app name, OGG/Opus path, duration, byte size, normalization details, Whisper status, recognized text, final text, and whether text was pasted. Short ignored recordings are logged too, with an `ignored_reason`.
 
 Show recent records from today's log:
 

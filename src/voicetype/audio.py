@@ -7,6 +7,10 @@ import numpy as np
 import sounddevice as sd
 import soundfile as sf
 
+OPUS_SUFFIX = ".ogg"
+OPUS_FORMAT = "OGG"
+OPUS_SUBTYPE = "OPUS"
+
 
 @dataclass(frozen=True)
 class AudioNormalization:
@@ -22,27 +26,32 @@ class AudioCleanupResult:
     failed: list[tuple[Path, str]]
 
 
-def record_wav(seconds: float, *, sample_rate: int, channels: int) -> Path:
+def record_opus(seconds: float, *, sample_rate: int, channels: int) -> Path:
     frames = int(seconds * sample_rate)
     recording = sd.rec(frames, samplerate=sample_rate, channels=channels, dtype="float32")
     sd.wait()
-    temp = tempfile.NamedTemporaryFile(prefix="voicetype-", suffix=".wav", delete=False)
+    temp = tempfile.NamedTemporaryFile(prefix="voicetype-", suffix=OPUS_SUFFIX, delete=False)
     temp.close()
     path = Path(temp.name)
-    sf.write(path, recording, sample_rate)
+    normalized, _normalization = normalize_audio_samples(recording)
+    write_opus_file(path, normalized, sample_rate)
     return path
 
 
-def normalize_wav(path: str | Path, *, target_peak: float = 0.8, max_gain: float = 50.0) -> AudioNormalization:
-    wav_path = Path(path)
-    audio, sample_rate = sf.read(wav_path, dtype="float32", always_2d=True)
+def normalize_audio_samples(
+    samples,
+    *,
+    target_peak: float = 0.8,
+    max_gain: float = 50.0,
+) -> tuple[np.ndarray, AudioNormalization]:
+    audio = np.asarray(samples, dtype="float32")
     peak_before = float(np.max(np.abs(audio))) if audio.size else 0.0
     if peak_before <= 0:
-        return AudioNormalization(applied=False, gain=1.0, peak_before=0.0, peak_after=0.0)
+        return audio, AudioNormalization(applied=False, gain=1.0, peak_before=0.0, peak_after=0.0)
 
     gain = min(target_peak / peak_before, max_gain)
     if gain <= 1.0:
-        return AudioNormalization(
+        return audio, AudioNormalization(
             applied=False,
             gain=1.0,
             peak_before=peak_before,
@@ -50,14 +59,17 @@ def normalize_wav(path: str | Path, *, target_peak: float = 0.8, max_gain: float
         )
 
     normalized = np.clip(audio * gain, -1.0, 1.0)
-    sf.write(wav_path, normalized, sample_rate)
     peak_after = float(np.max(np.abs(normalized))) if normalized.size else 0.0
-    return AudioNormalization(
+    return normalized, AudioNormalization(
         applied=True,
         gain=gain,
         peak_before=peak_before,
         peak_after=peak_after,
     )
+
+
+def write_opus_file(path: str | Path, audio, sample_rate: int) -> None:
+    sf.write(Path(path), audio, sample_rate, format=OPUS_FORMAT, subtype=OPUS_SUBTYPE)
 
 
 def cleanup_old_temp_audio(
@@ -71,13 +83,14 @@ def cleanup_old_temp_audio(
     deleted: list[Path] = []
     failed: list[tuple[Path, str]] = []
 
-    for path in cleanup_dir.glob("voicetype-*.wav"):
-        try:
-            if path.stat().st_mtime < cutoff:
-                path.unlink()
-                deleted.append(path)
-        except OSError as exc:
-            failed.append((path, str(exc)))
+    for pattern in ("voicetype-*.ogg", "voicetype-*.wav"):
+        for path in sorted(cleanup_dir.glob(pattern)):
+            try:
+                if path.stat().st_mtime < cutoff:
+                    path.unlink()
+                    deleted.append(path)
+            except OSError as exc:
+                failed.append((path, str(exc)))
 
     return AudioCleanupResult(deleted=deleted, failed=failed)
 
@@ -89,12 +102,14 @@ class ToggleRecorder:
         self._chunks = []
         self._stream = None
         self.is_recording = False
+        self.last_normalization: AudioNormalization | None = None
 
     def start(self) -> None:
         if self.is_recording:
             return
 
         self._chunks = []
+        self.last_normalization = None
         self._stream = sd.InputStream(
             samplerate=self.sample_rate,
             channels=self.channels,
@@ -104,7 +119,7 @@ class ToggleRecorder:
         self._stream.start()
         self.is_recording = True
 
-    def stop_to_wav(self) -> Path:
+    def stop_to_opus(self) -> Path:
         if not self.is_recording or self._stream is None:
             raise RuntimeError("Recorder is not running")
 
@@ -113,10 +128,12 @@ class ToggleRecorder:
         self._stream = None
         self.is_recording = False
 
-        temp = tempfile.NamedTemporaryFile(prefix="voicetype-", suffix=".wav", delete=False)
+        temp = tempfile.NamedTemporaryFile(prefix="voicetype-", suffix=OPUS_SUFFIX, delete=False)
         temp.close()
         path = Path(temp.name)
-        sf.write(path, self._recording_array(), self.sample_rate)
+        normalized, normalization = normalize_audio_samples(self._recording_array())
+        self.last_normalization = normalization
+        write_opus_file(path, normalized, self.sample_rate)
         return path
 
     def cancel(self) -> None:

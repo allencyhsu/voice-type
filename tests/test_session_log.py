@@ -78,7 +78,7 @@ def test_build_listen_session_record_keeps_audio_and_result_details():
     record = build_listen_session_record(
         started_at="2026-05-15T09:30:00+08:00",
         completed_at="2026-05-15T09:30:04+08:00",
-        audio_path=Path("C:/Temp/voicetype-test.wav"),
+        audio_path=Path("C:/Temp/voicetype-test.ogg"),
         audio_seconds=4.2,
         audio_bytes=12345,
         normalization=AudioNormalization(
@@ -101,7 +101,7 @@ def test_build_listen_session_record_keeps_audio_and_result_details():
 
     assert record["event"] == "listen_segment"
     assert record["app_name"] == "notepad"
-    assert record["audio"]["path"] == "C:/Temp/voicetype-test.wav"
+    assert record["audio"]["path"] == "C:/Temp/voicetype-test.ogg"
     assert record["audio"]["bytes"] == 12345
     assert record["normalization"]["applied"] is True
     assert record["asr"]["status"] == "inserted"
@@ -113,7 +113,7 @@ def test_build_listen_session_record_includes_memory_metadata():
     record = build_listen_session_record(
         started_at="2026-05-19T10:00:00+08:00",
         completed_at="2026-05-19T10:00:03+08:00",
-        audio_path=Path("C:/Temp/voicetype-test.wav"),
+        audio_path=Path("C:/Temp/voicetype-test.ogg"),
         audio_seconds=3.0,
         audio_bytes=1234,
         normalization=None,

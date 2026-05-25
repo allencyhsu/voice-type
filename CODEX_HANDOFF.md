@@ -4,13 +4,12 @@
 
 - Repo: `git@github.com:allencyhsu/voice-type.git`
 - Working branch: `main`
-- Latest committed baseline before this handoff update: `33acdc3 fix: open latest log as text file`
-- This handoff update covers Settings UI v1: tray Settings opens a native Tk window, writes user settings JSON, and manages startup/log/correction-memory actions.
-- Env-example docs are covered through the merged env-example commits; check `git log --oneline` for the exact latest docs refresh after this fix commit.
+- Latest committed baseline before this handoff update: `f1ddc61 feat: add tray settings UI`
+- This handoff update covers OGG/Opus recording: VoiceType records and uploads `.ogg` Opus audio by default, with no WAV recording fallback. Existing `transcribe` can still submit server-supported audio files such as MP3, M4A, WAV, and OGG/Opus.
 - Workspace used in recent work: `C:\Users\Allen\Desktop\Projects\VoiceType`
 - Python environment: local `.venv`
 
-This handoff tracks the current VoiceType main branch state, including the env-example settings workflow, Settings UI v1, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
+This handoff tracks the current VoiceType main branch state, including the OGG/Opus recording default, env-example settings workflow, Settings UI v1, output-mute work, the latest-log file presenter fix, and ASR request-timeout recovery.
 
 ## Service Endpoints
 
@@ -36,7 +35,7 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Tray Quit stops the background listener/hotkey path before closing the icon.
 - Right Ctrl toggles listener mode:
   - first press starts recording
-  - second press stops recording, normalizes audio, transcribes, optionally polishes, and pastes through the clipboard
+  - second press stops recording to OGG/Opus, normalizes audio, transcribes, optionally polishes, and pastes through the clipboard
 - Microphone is opened only during active recording. It is not kept open while idle.
 - If VoiceType exits while recording, the active audio stream is cancelled and closed instead of being left open.
 - Windows default output audio is muted only during active recording and restored to its previous mute state before transcription, Qwen polish, or paste work begins.
@@ -53,9 +52,9 @@ Important note: Whisper and Qwen are on different hosts. Do not mix the earlier 
 - Tray listener notification mode can also come from `VOICETYPE_NOTIFY`, `.env`, or Settings UI JSON.
 - Audio normalization is applied before transcription when the captured peak is low.
 - Very short accidental recordings are ignored by `min_record_seconds`, default `0.7`.
-- Temporary WAV files are retained for the current local calendar day only. On startup, `voicetype-*.wav` older than local midnight are removed.
+- Temporary OGG/Opus files are retained for the current local calendar day only. On startup, `voicetype-*.ogg` older than local midnight are removed; legacy `voicetype-*.wav` files from earlier builds are cleaned by the same startup pass.
 - Listener session logs are written as JSONL to `%LOCALAPPDATA%\VoiceType\logs\YYYY-MM-DD.jsonl`.
-- Session logs include start/end time, WAV path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, correction memory metadata, Whisper hotword filtering metadata, and ignored-recording reason.
+- Session logs include start/end time, OGG/Opus path, audio duration, file bytes, normalization info, ASR status, raw/final text, paste flag, correction memory metadata, Whisper hotword filtering metadata, and ignored-recording reason.
 - `logs` CLI command can show today's recent session records, show only the newest record with `--last`, emit records as JSONL, and open the log directory.
 - `--hotword` values are passed to Qwen polish payloads. Faster Whisper receives only the filtered hotword shortlist.
 - Faster Whisper hotwords are capped to five entries of five Unicode characters each.
@@ -142,31 +141,30 @@ python -m voicetype tray --help
 python -m voicetype listen --help
 ```
 
-Last known verification for the Settings UI v1 change:
+Last known verification for the OGG/Opus recording change:
 
 ```text
-.\.venv\Scripts\python.exe -m pytest tests/test_user_settings.py tests/test_settings.py tests/test_settings_ui.py tests/test_tray.py tests/test_listener_runtime.py tests/test_cli_entrypoint.py -q
-53 passed
-
 .\.venv\Scripts\python.exe -m pytest -q
-121 passed
+122 passed
 
 .\.venv\Scripts\python.exe -m compileall -q src tests
 OK
 
+git diff --check
+OK
+
+Opus smoke
+silent_norm_applied=False bytes=950 format=OGG subtype=OPUS
+quiet_norm_applied=True quiet_peak=0.800 bytes=954 format=OGG subtype=OPUS
+server_success=True text_len=0 language=cy wall=0.292s transcribe_time=0.25491786003112793
+
 .\.venv\Scripts\python.exe -m voicetype --help
 OK
 
-.\.venv\Scripts\python.exe -m voicetype tray --help
+.\.venv\Scripts\python.exe -m voicetype record --help
 OK
 
 .\.venv\Scripts\python.exe -m voicetype listen --help
-OK
-
-Tk construction smoke for `SettingsWindow`
-settings window constructed
-
-git diff --check
 OK
 ```
 
@@ -180,10 +178,12 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 
 ## Recent Commits
 
+- `f1ddc61 feat: add tray settings UI`
+- `4635f13 fix: handle ASR request timeouts`
+- `63a3e6c docs: refresh handoff after latest log file change`
 - `33acdc3 fix: open latest log as text file`
-- `35e1ad4 docs: refresh env example handoff state`
-- `5008c26 fix: use native dialog for tray latest log`
 - `04122b0 docs: refresh handoff after tray dialog fix`
+- `5008c26 fix: use native dialog for tray latest log`
 - `8d605e0 docs: refresh handoff after env example merge`
 - `23d884b docs: document env settings workflow`
 - `efd0844 test: verify env example defaults`
@@ -255,7 +255,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 ## Useful Files
 
 - `src/voicetype/cli.py` - command parsing, listener loop, session logging hookup
-- `src/voicetype/audio.py` - recording, normalization, temp WAV cleanup
+- `src/voicetype/audio.py` - OGG/Opus recording, normalization, temp audio cleanup
 - `src/voicetype/output_audio.py` - Windows output mute guard and safe restore helpers
 - `src/voicetype/active_window.py` - focused Windows app/window detection
 - `src/voicetype/listener_runtime.py` - background runtime wrapper for listener mode
@@ -283,7 +283,7 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 1. Manually validate tray icon right-click menu, `Settings...`, `Show Latest Log`, Quit, and Right Ctrl dictation flow from `python -m voicetype tray`.
 2. Add an optional setting for log retention or cleanup if JSONL grows too large.
 3. Improve the Qwen prompt with explicit app-specific style hints now that app context and correction memory are available.
-4. Add an integration smoke script that records a very short test WAV, transcribes it with `--no-paste --no-llm`, and prints the session log path.
+4. Add an integration smoke script that records a very short OGG/Opus file, transcribes it with `--no-paste --no-llm`, and prints the session log path.
 5. Consider packaging or shortcut creation after tray mode has been manually exercised for a few sessions.
 
 ## Cautions
@@ -294,5 +294,5 @@ OK, mute state changed initial 0 -> during 1 -> restored 0
 - Do not change the idle microphone behavior without explicit approval.
 - Do not mute output outside active recording, and do not overwrite a user's preexisting muted state.
 - Do not make overlay diagnostic-heavy; keep diagnostics in terminal and logs.
-- Avoid long-term WAV retention until the user explicitly asks for it, because the files can contain private speech.
+- Avoid long-term audio retention until the user explicitly asks for it, because the files can contain private speech.
 - Do not replace the Startup folder approach with installer behavior until tray mode is stable.

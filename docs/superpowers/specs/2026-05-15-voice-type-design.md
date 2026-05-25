@@ -10,6 +10,7 @@ The MVP intentionally avoids writing a Windows IME, kernel driver, or always-lis
 
 - Capture speech on demand from a Windows hotkey or CLI-triggered session.
 - Send captured audio to `http://forge2.tail9d0481.ts.net:8008/transcribe`.
+- Record and upload captured dictation as OGG/Opus by default. Captured dictation does not use a WAV upload fallback.
 - Use the same Faster Whisper request shape as `u:\Projects\podcast-etl\fwhisper_meeting.py`.
 - Use model `large-v2` on the Faster Whisper server.
 - Optionally polish the raw transcript through Qwen 3.6 via llama-server at `http://ai-srv.tail9d0481.ts.net:8001`.
@@ -30,8 +31,8 @@ The MVP intentionally avoids writing a Windows IME, kernel driver, or always-lis
 
 1. User places the cursor in any text field.
 2. User starts a dictation session.
-3. VoiceType records audio into a temporary WAV file.
-4. VoiceType uploads the WAV file to the Faster Whisper server.
+3. VoiceType records audio into a temporary OGG/Opus file.
+4. VoiceType uploads the OGG/Opus file to the Faster Whisper server.
 5. VoiceType concatenates returned segments into raw transcript text.
 6. VoiceType sends raw text to Qwen for cleanup if the LLM endpoint is available and polish mode is enabled.
 7. VoiceType pastes the final text into the focused application.
@@ -66,7 +67,7 @@ The first implementation should be a Python prototype. This keeps the feedback l
 Recommended packages:
 
 - `requests` for HTTP.
-- `sounddevice` and `soundfile` for recording WAV files.
+- `sounddevice` and `soundfile` for recording OGG/Opus files.
 - `pyperclip` for clipboard insertion.
 - `pyautogui` for paste hotkey fallback.
 - `pydantic-settings` for environment-based settings.
@@ -101,7 +102,7 @@ Content-Type: multipart/form-data
 Multipart file field:
 
 ```text
-file = recorded WAV file
+file = recorded OGG/Opus file for VoiceType dictation. Existing server clients may still upload other FFmpeg/PyAV-decodable formats such as MP3, M4A, or WAV.
 ```
 
 Form fields:
@@ -251,13 +252,13 @@ The MVP sends audio and transcript text to services on the user's Tailscale netw
 - Unit test Qwen prompt and fail-open behavior.
 - Unit test transcript concatenation.
 - Unit test text injection calls through mocked clipboard and keyboard APIs.
-- Add one manual integration script that records or uploads a small WAV file to the real Whisper server.
+- Add one manual integration script that records or uploads a small OGG/Opus file to the real Whisper server.
 
 ## MVP Acceptance Criteria
 
 - `python -m pytest` passes.
 - `python -m voicetype doctor` confirms the Faster Whisper server is healthy and reports model `large-v2`.
-- `python -m voicetype transcribe path\to\sample.wav` prints a non-empty transcript for valid speech audio.
-- With Qwen unavailable, `python -m voicetype transcribe path\to\sample.wav --paste` still inserts raw transcript text.
+- `python -m voicetype transcribe path\to\sample.ogg` prints a non-empty transcript for valid speech audio.
+- With Qwen unavailable, `python -m voicetype transcribe path\to\sample.ogg --paste` still inserts raw transcript text.
 - With Qwen available, polish mode returns JSON and inserts the `text` value.
 - No empty text is pasted after a failed ASR response.

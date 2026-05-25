@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from voicetype.active_window import get_active_app_name
-from voicetype.audio import cleanup_old_temp_audio, ToggleRecorder, normalize_wav, record_wav
+from voicetype.audio import AudioNormalization, cleanup_old_temp_audio, ToggleRecorder, record_opus
 from voicetype.hotkey import RightCtrlToggleListener
 from voicetype.injector import TextInjector
 from voicetype.memory import CorrectionMemoryStore, CorrectionType
@@ -33,13 +33,13 @@ from voicetype.settings import Settings
 from voicetype.whisper_client import WhisperClient
 
 
-def record_wav_with_output_muted(
+def record_opus_with_output_muted(
     seconds: float,
     *,
     sample_rate: int,
     channels: int,
     output_guard: OutputMuteGuard | None = None,
-    record_func: Callable[..., Path] = record_wav,
+    record_func: Callable[..., Path] = record_opus,
 ) -> Path:
     guard = output_guard or create_output_mute_guard()
     try_mute_for_recording(guard)
@@ -162,12 +162,11 @@ def main() -> None:
 
     audio_file = getattr(args, "audio_file", None)
     if args.command == "record":
-        audio_file = record_wav_with_output_muted(
+        audio_file = record_opus_with_output_muted(
             args.seconds or settings.record_seconds,
             sample_rate=settings.sample_rate,
             channels=settings.channels,
         )
-        normalize_wav(audio_file)
 
     final_text = pipeline.process_file(
         audio_file,
@@ -203,7 +202,7 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
             notifier.notify("Processing...")
             update_listener_status(args, "Processing")
             try:
-                audio_path = recorder.stop_to_wav()
+                audio_path = recorder.stop_to_opus()
             finally:
                 try_restore_output(output_guard)
             completed_at = current_timestamp()
@@ -233,7 +232,12 @@ def run_listen(args, settings: Settings, pipeline: DictationPipeline) -> None:
                 update_listener_status(args, "Ready")
                 return
 
-            normalization = normalize_wav(audio_path)
+            normalization = recorder.last_normalization or AudioNormalization(
+                applied=False,
+                gain=1.0,
+                peak_before=0.0,
+                peak_after=0.0,
+            )
             print(f"[VoiceType] Captured {recorded_seconds:.2f}s, {audio_bytes} bytes: {audio_path}")
             if normalization.applied:
                 print(

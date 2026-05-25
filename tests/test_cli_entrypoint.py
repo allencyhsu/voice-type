@@ -8,7 +8,6 @@ from voicetype.cli import (
     describe_pipeline_result,
     describe_pipeline_status,
     format_log_summary,
-    record_wav_with_output_muted,
     run_listen,
     select_recent_records,
     should_process_recording,
@@ -62,21 +61,22 @@ class FakeListener:
 
 
 class FakeRecorder:
-    def __init__(self, events, wav_path, *, duration_seconds):
+    def __init__(self, events, opus_path, *, duration_seconds):
         self.events = events
-        self.wav_path = wav_path
+        self.opus_path = opus_path
         self.duration_seconds = duration_seconds
         self.is_recording = False
+        self.last_normalization = SimpleNamespace(applied=True, gain=2.0, peak_before=0.4, peak_after=0.8)
 
     def start(self):
         self.events.append("recorder.start")
         self.is_recording = True
 
-    def stop_to_wav(self):
+    def stop_to_opus(self):
         self.events.append("recorder.stop")
         self.is_recording = False
-        self.wav_path.write_bytes(b"fake wav")
-        return self.wav_path
+        self.opus_path.write_bytes(b"fake opus")
+        return self.opus_path
 
     def cancel(self):
         self.events.append("recorder.cancel")
@@ -84,7 +84,7 @@ class FakeRecorder:
 
 
 class FakeRecorderStopFails(FakeRecorder):
-    def stop_to_wav(self):
+    def stop_to_opus(self):
         self.events.append("recorder.stop")
         self.is_recording = False
         raise RuntimeError("stop failed")
@@ -123,23 +123,21 @@ def _patch_listen_dependencies(
     recorder_class=FakeRecorder,
 ):
     guard = FakeOutputGuard(events)
-    recorder = recorder_class(events, tmp_path / "listen.wav", duration_seconds=duration_seconds)
+    recorder = recorder_class(events, tmp_path / "listen.ogg", duration_seconds=duration_seconds)
 
     monkeypatch.setattr(cli, "create_output_mute_guard", lambda: guard)
     monkeypatch.setattr(cli, "ToggleRecorder", lambda *, sample_rate, channels: recorder)
     monkeypatch.setattr(cli, "create_notifier", lambda notify: FakeNotifier(events))
     monkeypatch.setattr(cli, "RightCtrlToggleListener", lambda toggle: FakeListener(toggle, events, interrupt=interrupt))
     monkeypatch.setattr(cli, "get_active_app_name", lambda: events.append("active_app") or "Notepad")
-    monkeypatch.setattr(
-        cli,
-        "normalize_wav",
-        lambda audio_path: events.append("normalize")
-        or SimpleNamespace(applied=False, gain=1.0, peak_before=0.0, peak_after=0.0),
-    )
     monkeypatch.setattr(cli, "append_session_record", lambda session_logger, record: events.append("session.log"))
     monkeypatch.setattr(cli, "current_timestamp", lambda: events.append("timestamp") or "2026-05-21T00:00:00+08:00")
 
     return recorder
+
+
+def test_cli_does_not_import_file_normalizer_for_recorded_opus():
+    assert not hasattr(cli, "normalize_wav")
 
 
 def test_run_listen_mutes_between_start_and_stop_then_restores_before_processing(monkeypatch, tmp_path):
@@ -149,8 +147,8 @@ def test_run_listen_mutes_between_start_and_stop_then_restores_before_processing
     run_listen(_listen_args(), _settings(), FakePipeline(events))
 
     assert events.index("recorder.start") < events.index("guard.mute") < events.index("recorder.stop")
-    assert events.index("recorder.stop") < events.index("guard.restore") < events.index("normalize")
-    assert events.index("normalize") < events.index("pipeline.process:listen.wav:Notepad:True")
+    assert events.index("recorder.stop") < events.index("guard.restore") < events.index("active_app")
+    assert events.index("active_app") < events.index("pipeline.process:listen.ogg:Notepad:True")
 
 
 def test_run_listen_short_recording_restores_output_and_skips_pipeline(monkeypatch, tmp_path):
@@ -176,7 +174,7 @@ def test_run_listen_keyboard_interrupt_while_recording_cancels_and_restores(monk
     assert not any(event.startswith("pipeline.process") for event in events)
 
 
-def test_run_listen_restores_output_when_stop_to_wav_fails_after_recording_clears(
+def test_run_listen_restores_output_when_stop_to_opus_fails_after_recording_clears(
     monkeypatch, tmp_path
 ):
     events = []
@@ -202,15 +200,15 @@ def test_run_listen_restores_output_when_stop_to_wav_fails_after_recording_clear
     assert not any(event.startswith("pipeline.process") for event in events)
 
 
-def test_record_wav_with_output_muted_mutes_records_and_restores(tmp_path):
+def test_record_opus_with_output_muted_mutes_records_and_restores(tmp_path):
     events = []
-    wav_path = tmp_path / "recorded.wav"
+    opus_path = tmp_path / "recorded.ogg"
 
     def record_func(seconds, *, sample_rate, channels):
         events.append(f"record:{seconds}:{sample_rate}:{channels}")
-        return wav_path
+        return opus_path
 
-    result = record_wav_with_output_muted(
+    result = cli.record_opus_with_output_muted(
         1.25,
         sample_rate=16000,
         channels=1,
@@ -218,11 +216,11 @@ def test_record_wav_with_output_muted_mutes_records_and_restores(tmp_path):
         record_func=record_func,
     )
 
-    assert result == wav_path
+    assert result == opus_path
     assert events == ["guard.mute", "record:1.25:16000:1", "guard.restore"]
 
 
-def test_record_wav_with_output_muted_restores_and_propagates_recording_errors():
+def test_record_opus_with_output_muted_restores_and_propagates_recording_errors():
     events = []
 
     def record_func(seconds, *, sample_rate, channels):
@@ -230,7 +228,7 @@ def test_record_wav_with_output_muted_restores_and_propagates_recording_errors()
         raise RuntimeError("microphone failed")
 
     try:
-        record_wav_with_output_muted(
+        cli.record_opus_with_output_muted(
             1.0,
             sample_rate=16000,
             channels=1,
@@ -399,7 +397,7 @@ def test_format_log_summary_includes_debug_fields():
         [
             {
                 "completed_at": "2026-05-15T09:30:04+08:00",
-                "audio": {"seconds": 4.2, "path": "C:/Temp/voicetype-test.wav"},
+                "audio": {"seconds": 4.2, "path": "C:/Temp/voicetype-test.ogg"},
                 "app_name": "notepad",
                 "asr": {
                     "status": "inserted",
@@ -414,7 +412,7 @@ def test_format_log_summary_includes_debug_fields():
     )
 
     assert lines == [
-        "2026-05-15T09:30:04+08:00 | app=notepad | 4.20s | inserted | zh | asr=0.30s | pasted=yes | hello world | C:/Temp/voicetype-test.wav"
+        "2026-05-15T09:30:04+08:00 | app=notepad | 4.20s | inserted | zh | asr=0.30s | pasted=yes | hello world | C:/Temp/voicetype-test.ogg"
     ]
 
 
