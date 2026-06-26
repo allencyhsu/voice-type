@@ -169,7 +169,7 @@ For development, keep `initial_prompt` plus `hotwords` bounded and prefer a dedu
 
 Qwen polish is instructed to output Chinese text in Traditional Chinese. Simplified Chinese characters should be converted to Traditional Chinese, while English technical terms, filenames, product names, and menu item names should remain in their original language.
 
-The built-in polish prompt also includes a small set of common VoiceType correction rules observed from session logs, such as `.env`, `TTS Cache`, `LLM`, `TTS`, `Whisper`, `hotword`, `ONNX`, `瀏覽`, `回覆`, and `Codex-Handoff.md`. Longer or project-specific corrections should still go into correction memory instead of Faster Whisper hotwords.
+The built-in polish prompt also includes a small set of common VoiceType correction rules observed from session logs, such as `.env`, `TTS Cache`, `LLM`, `TTS`, `Whisper`, `hotword`, `ONNX`, `瀏覽`, `回覆`, and `CODEX_HANDOFF.md`. Longer or project-specific corrections should still go into correction memory instead of Faster Whisper hotwords.
 
 In listener mode, VoiceType also detects the currently focused Windows app and passes the app name to Qwen so the polish step can account for the target writing context.
 

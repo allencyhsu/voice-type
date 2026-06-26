@@ -134,6 +134,7 @@ def test_polish_prompt_includes_common_voicetype_correction_rules():
     assert "點emv -> .env" in system_prompt
     assert "Quizper -> Whisper" in system_prompt
     assert "Hot War -> hotword" in system_prompt
+    assert "CODEX_HANDOFF.md" in system_prompt
     assert "Do not translate English product names, menu item names, filenames, or code terms" in system_prompt
 
 

@@ -32,7 +32,7 @@ Rules:
   - ORNX and OONNX -> ONNX
   - 瀲覽 and 瀞覽 -> 瀏覽
   - 回復 -> 回覆
-  - Codecs-Handoff.mb and codex-handle.m -> Codex-Handoff.md
+  - Codecs-Handoff.mb and codex-handle.m -> CODEX_HANDOFF.md
 - Do not insert Chinese connector words into English phrases. For example, keep "Fresh Orange Juice and Watermelon Juice" in English.
 - Match the target application tone when app context is available.
 - Return only JSON with action and text."""

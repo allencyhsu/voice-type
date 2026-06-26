@@ -17,7 +17,7 @@
 - Modify: `src/voicetype/settings.py` - include JSON settings as a lower-priority source than env and `.env`.
 - Modify: `src/voicetype/tray.py` - add `Settings...` action and single-window opener hook.
 - Add/modify tests: `tests/test_user_settings.py`, `tests/test_settings.py`, `tests/test_settings_ui.py`, `tests/test_tray.py`.
-- Modify docs: `README.md`, `CODEX_HANDOFF.md`, `Codex-Handoff.md`.
+- Modify docs: `README.md`, `CODEX_HANDOFF.md`.
 
 ## Tasks
 
